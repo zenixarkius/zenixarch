@@ -22,4 +22,5 @@ pipewire-jack
 pipewire-pulse
 sbctl
 signal-desktop
+ttf-hack-nerd
 wireguard-tools
