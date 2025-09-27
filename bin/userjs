@@ -38,7 +38,8 @@ user_pref("dom.push.connection.enabled", false);
 // Stop location.services.mozilla.com
 user_pref("browser.region.network.url", "");
 
-// uBlock does not update often enough to justify regular automatic connections
+// Stop extension updates
+user_pref("extensions.systemAddon.update.url", "");
 user_pref("extensions.update.autoUpdateDefault", false);
 user_pref("extensions.update.enabled", false);
 

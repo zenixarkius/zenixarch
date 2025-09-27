@@ -19,9 +19,9 @@ configuration() {
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
 
-    /home/user/.zenixarch/bin/userjs
+    ping -c 1 github.com &>/dev/null && /home/user/.zenixarch/bin/userjs
 
-    ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for it's existence
+    ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
     ln -sfn /tmp /home/user/.cache
     ln -sfn /tmp /home/user/.local
 

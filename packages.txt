@@ -2,6 +2,7 @@ adguardhome
 base
 btrfs-progs
 firefox
+firefox-ublock-origin
 foot
 git
 hyprland
