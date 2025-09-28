@@ -1,7 +1,7 @@
 [user]
 	email = 231135227+zenixarkus@users.noreply.github.com
 	name = zenixark
-	signingkey = 77BEC29FC2589D10
+	signingkey = 1AC792957DF89D42
 [commit]
 	gpgSign = true
 [core]
