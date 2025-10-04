@@ -19,7 +19,7 @@ configuration() {
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
 
-    ping -c 1 github.com &>/dev/null && /home/user/.zenixarch/bin/userjs
+    ping -c 1 zenixark.com &>/dev/null && curl https://zenixark.com/api/v1/repos/zenixark/firefox-hardening/raw/mkuserjs > /usr/local/bin/mkuserjs && chmod +x /usr/local/bin/mkuserjs && mkuserjs
 
     ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
     ln -sfn /tmp /home/user/.cache

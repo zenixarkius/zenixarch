@@ -12,7 +12,6 @@ bind '"\e[B":history-search-forward'
 shopt -s autocd
 shopt -s histappend
 
-export PATH="$HOME/.zenixarch/bin:$PATH"
 export PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
 export HISTCONTROL=ignoredups:erasedups
 export HISTSIZE=10000
