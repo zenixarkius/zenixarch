@@ -10,6 +10,7 @@ hyprpaper
 hyprpicker
 hyprshot
 intel-ucode
+iptables-nft
 iwd
 linux
 linux-firmware-intel

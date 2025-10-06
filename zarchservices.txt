@@ -1,6 +1,5 @@
 adguardhome.service
 getty@.service
-ip6tables.service
-iptables.service
 iwd.service
+nftables.service
 systemd-timesyncd.service
