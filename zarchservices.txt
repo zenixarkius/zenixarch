@@ -3,7 +3,4 @@ getty@.service
 ip6tables.service
 iptables.service
 iwd.service
-overclock.service
-rgb.service
 systemd-timesyncd.service
-wireguard.service

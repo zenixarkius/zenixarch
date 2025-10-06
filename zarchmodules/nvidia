@@ -1,3 +1,10 @@
+#!/bin/bash
+
+[[ ! "${EUID:-"$(id -u)"}" -eq 0 ]] && echo "This script needs to be run as root" && exit 1
+
+pacman -S --noconfirm --needed nvidia
+
+cat > /etc/systemd/system/overclock.service << 'SERVICE'
 [Unit]
 Description=Set NVIDIA overclocks
 
@@ -15,3 +22,6 @@ runuser -u user -- /opt/nvml/bin/pip install --upgrade nvidia-ml-py; \
 
 [Install]
 WantedBy=multi-user.target
+SERVICE
+
+systemctl enable $NOW overclock.service

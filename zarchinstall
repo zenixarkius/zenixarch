@@ -1,23 +1,18 @@
 #!/bin/bash
 set -euo pipefail
 
-if ! [ "${EUID:-"$(id -u)"}" -eq 0 ]; then
-    echo "This script needs to be run as root"
-    exit 1
-fi
+[[ ! "${EUID:-"$(id -u)"}" -eq 0 ]] && echo "This script needs to be run as root" && exit 1
 
 configuration() {
     find /home/user/.zenixarch/{etc,home,var} -type f | while read -r src; do
-        if [[ "$src" == /home/user/.zenixarch/etc/systemd/system/*.service ]]; then
-            systemctl link "$src"
-        else
-            if ! cmp -s "$src" "/${src#/home/user/.zenixarch/}"; then
-                install -Dm644 "$src" "/${src#/home/user/.zenixarch/}"
-            fi
+        if ! cmp -s "$src" "/${src#/home/user/.zenixarch/}"; then
+            install -Dm644 "$src" "/${src#/home/user/.zenixarch/}"
         fi
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
+
+    cat /home/user/.zenixarch/zarchpackages.txt | pacman -S --noconfirm --needed -
 
     ping -c 1 zenixark.com &>/dev/null && curl https://zenixark.com/api/v1/repos/zenixark/firefox-hardening/raw/mkuserjs > /usr/local/bin/mkuserjs && chmod +x /usr/local/bin/mkuserjs && mkuserjs
 
@@ -32,10 +27,10 @@ configuration() {
     while read -r svc; do
         [[ -n "$svc" ]] || continue
         systemctl enable $NOW "$svc"
-    done < /home/user/.zenixarch/services.txt
+    done < /home/user/.zenixarch/zarchservices.txt
 
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        if ! grep -qx "$svc" /home/user/.zenixarch/services.txt; then
+        if ! grep -qx "$svc" /home/user/.zenixarch/zarchservices.txt; then
             systemctl disable $NOW "$svc"
         fi
     done
@@ -43,6 +38,11 @@ configuration() {
     systemctl enable fstrim.timer btrfs-scrub@-.timer
 
     systemctl mask systemd-boot-random-seed.service
+
+    export NOW="$NOW"
+    /home/user/.zenixarch/zarchmodules/nvidia
+    /home/user/.zenixarch/zarchmodules/rgb
+    /home/user/.zenixarch/zarchmodules/wireguard
 
     mkinitcpio -p linux
 
@@ -114,7 +114,7 @@ if [ -d /run/archiso ]; then
     sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
     pacman -Sy --noconfirm archlinux-keyring
 
-    cat "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/packages.txt | pacstrap /mnt -
+    cat "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/zarchpackages.txt | pacstrap /mnt -
 
     mv /mnt/boot/vmlinuz-linux /mnt/usr/lib/modules/vmlinuz
     rm -rf /mnt/boot/*

@@ -13,12 +13,13 @@ This repo contains every tweak I have made to Arch Linux. I like the idea of dec
 - **Default-deny `ip(6)tables` rules** including `:OUTPUT DROP [0:0]`, excepting common ports.
 - **Self-hosted `adguardhome` DNS sinkhole** only accessible on `127.0.0.1` with a LOT of blocklists including GAFAM ones.
 
-WireGuard, NVIDIA tuning, declarative packages & services, applying my [firefox-hardening](https://zenixark.com/zenixark/firefox-hardening)... this is already getting too long... there is a LOT, it might be better to just take a look around the repository.
+WireGuard and NVIDIA overclock modules, declarative packages & services, applying my [firefox-hardening](https://zenixark.com/zenixark/firefox-hardening)... this is already getting too long... there is a LOT, it might be better to just take a look around the repository.
 
 ## Usage
 > [!WARNING]
 > This is a REALLY ***REALLY*** opinionated setup that assumes my hardware and philosophy.  
 > It's *not* intended to be reused by others, but if you do then I would very much recommend changing almost everything.
+> Especially modules as they're very specific features, remove their lines from `zarchinstall` if you dont want them.
 
 A full installation is *technically* optional as `zarchinstall` will skip one outside a live Arch ISO, but `configuration()` **HEAVILY** assumes the configuration of one, such as `/home/user` and `/etc/kernel/cmdline`. Otherwise, this repo can just be cloned to `~/.zenixarch` and installed at your own risk as there will 100% be breakage without manual changes.
 
