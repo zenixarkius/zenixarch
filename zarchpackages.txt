@@ -17,6 +17,7 @@ linux-firmware-intel
 linux-firmware-realtek
 neovim
 noto-fonts
+nvidia
 opendoas
 pipewire-jack
 pipewire-pulse

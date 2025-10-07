@@ -1,18 +1,17 @@
 #!/bin/bash
 set -euo pipefail
 
-[[ ! "${EUID:-"$(id -u)"}" -eq 0 ]] && echo "This script needs to be run as root" && exit 1
+(( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
 configuration() {
-    find /home/user/.zenixarch/{etc,home,var} -type f | while read -r src; do
-        if ! cmp -s "$src" "/${src#/home/user/.zenixarch/}"; then
-            install -Dm644 "$src" "/${src#/home/user/.zenixarch/}"
-        fi
+    mapfile -t files < <(find /home/user/.zenixarch/{etc,home,var} -type f)
+    for src in "${files[@]}"; do
+        cmp -s "$src" "/${src#/home/user/.zenixarch/}" || install -Dm644 "$src" "/${src#/home/user/.zenixarch/}"
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
 
-    cat /home/user/.zenixarch/zarchpackages.txt | pacman -S --noconfirm --needed -
+    pacman -S --noconfirm --needed - < /home/user/.zenixarch/zarchpackages.txt
 
     ping -c 1 zenixark.com &>/dev/null && curl https://zenixark.com/api/v1/repos/zenixark/firefox-hardening/raw/mkuserjs > /usr/local/bin/mkuserjs && chmod +x /usr/local/bin/mkuserjs && mkuserjs
 
@@ -24,25 +23,21 @@ configuration() {
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
 
-    while read -r svc; do
+    mapfile -t services < /home/user/.zenixarch/zarchservices.txt
+    for svc in "${services[@]}"; do
         [[ -n "$svc" ]] || continue
         systemctl enable $NOW "$svc"
-    done < /home/user/.zenixarch/zarchservices.txt
-
-    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        if ! grep -qx "$svc" /home/user/.zenixarch/zarchservices.txt; then
-            systemctl disable $NOW "$svc"
-        fi
     done
 
-    systemctl enable fstrim.timer btrfs-scrub@-.timer
+    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
+        [[ "${services[*]}" != "$svc" ]] || systemctl disable $NOW "$svc"
+    done
+
+    systemctl enable {fstrim,btrfs-scrub@-}.timer
 
     systemctl mask systemd-boot-random-seed.service
 
-    export NOW="$NOW"
-    /home/user/.zenixarch/zarchmodules/nvidia
-    /home/user/.zenixarch/zarchmodules/rgb
-    /home/user/.zenixarch/zarchmodules/wireguard
+    for mod in /home/user/.zenixarch/zarchmodules/*; do "$mod"; done
 
     mkinitcpio -p linux
 
@@ -57,23 +52,15 @@ configuration() {
     fi
 }
 
-if [ -d /run/archiso ]; then
+if [[ -d /run/archiso ]]; then
     : "$DISK:?" "$PASS:?"
 
     read -rp $'\e[31mThis will wipe every little thing on your disk and reformat\n\e[31mAlso, you should know EVERYTHING this does before running it because it makes a LOT of assumptions\n\e[31mType "IK" to continue: \e[0m' CONFIRM
-    if [ "$CONFIRM" != "IK" ]; then
-        echo -e "\e[31mError: You didn't confirm you knew\e[0m"
-        exit 1
-    fi
+    [[ "$CONFIRM" != "IK" ]] && echo -e "\e[31mError: You didn't confirm you knew\e[0m" && exit 1
 
-    if mountpoint -q /mnt; then
-        umount -R /mnt
-        cryptsetup close cryptroot
-    fi
+    mountpoint -q /mnt && umount -R /mnt && cryptsetup close cryptroot
 
-    if nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096"; then
-        nvme format --lbaf=1 --force "/dev/$DISK"
-    fi
+    nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
 
     sgdisk --zap-all "/dev/$DISK"
     sgdisk -g "/dev/$DISK"
@@ -95,11 +82,7 @@ if [ -d /run/archiso ]; then
     btrfs su cr /mnt/@var_log
     btrfs su cr /mnt/@var_cache
     btrfs su cr /mnt/@var_lib_libvirt_images
-
-    ## Disable CoW where it can hurt performance
-    chattr +C /mnt/@var_log
-    chattr +C /mnt/@var_cache
-    chattr +C /mnt/@var_lib_libvirt_images
+    chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
     umount /mnt
 
     mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
@@ -114,7 +97,7 @@ if [ -d /run/archiso ]; then
     sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
     pacman -Sy --noconfirm archlinux-keyring
 
-    cat "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/zarchpackages.txt | pacstrap /mnt -
+    pacstrap /mnt - < "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/zarchpackages.txt
 
     mv /mnt/boot/vmlinuz-linux /mnt/usr/lib/modules/vmlinuz
     rm -rf /mnt/boot/*
@@ -135,11 +118,9 @@ if [ -d /run/archiso ]; then
     echo "LANG=en_US.UTF-8" > /etc/locale.conf
     locale-gen
 
-    echo "root:$PASS" | chpasswd
-    passwd --lock root
-
     useradd -m user
-    echo "user:$PASS" | chpasswd
+    chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
+    passwd --lock root
 
     mv /.zenixarch /home/user
 
@@ -147,7 +128,7 @@ if [ -d /run/archiso ]; then
 CHROOT
 
 else
-    NOW="--now"
+    export NOW="--now"
     configuration
 fi
 
