@@ -41,8 +41,6 @@ configuration() {
 
     mkinitcpio -p linux
 
-    ## I use --tpm-eventlog because otherwise my GPU's GOP driver doesn't get initialized leaving me with no boot video until the gpu drivers load which then it's just a software rendered framebuffer
-    ## This does prevent me from running the command inside a live ISO though... for whatever reason the TPM2 isnt detected in a live environment. This just means that zarchinstall can be ran again post-reboot to set it up assuming Setup Mode is still enabled.
     if sbctl status | grep -q "Setup Mode:.*Enabled"; then
         sbctl create-keys
         sbctl enroll-keys --tpm-eventlog
@@ -115,7 +113,6 @@ if [[ -d /run/archiso ]]; then
     hwclock --systohc
 
     sed -i 's/^#\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
-    echo "LANG=en_US.UTF-8" > /etc/locale.conf
     locale-gen
 
     useradd -m user
