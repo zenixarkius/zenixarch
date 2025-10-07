@@ -1,46 +1,40 @@
 # Zenixark's Arch Linux Setup
-**My entire minimalist privacy, security, and performance focused Arch system reproducible in one command**
+**My minimalist privacy, security, and performance focused Arch system fully reproducible with one command, inspired by NixOS and Ansible**
 
-This repo contains every tweak I have made to Arch Linux. I like the idea of declarative/idempotent systems such as NixOS and Ansible, but I don't want to give up Arch so why not make my Arch installation reproducible too?
+I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opinionated install reproducible in `bash`. This is *not* intended to be reused by others as it assumes my hardware and philosophy, but if you do then I would very much recommend changing almost everything.
 
 ## Core Features
 
-- **An idempotent installer, [**`zarchinstall`**](./zarchinstall)** that can do a full disk install from a live ISO and be re-ran again post-install to apply changes to this repository.
-- **Unified Kernel Image without a bootloader**. No `systemd-boot` or `grub` overhead, just the entire ESP in a single `/boot/EFI/BOOT/BOOTX64.EFI` directly booted by the EFI.
-- **FDE + `btrfs` with subvolumes** optimized for I/O performance, security, and snapshots.
-- **Custom Secure Boot keys** using `sbctl` to sign the UKI, this ensures that your initramfs has not been tampered with.
-- **Minimalist alternatives** such as `iwd` for Wi-Fi instead of `systemd-networkd` or `networkmanager` and `doas` instead of `sudo`.
-- **Default-deny `ip(6)tables` rules** including `:OUTPUT DROP [0:0]`, excepting common ports.
-- **Self-hosted `adguardhome` DNS sinkhole** only accessible on `127.0.0.1` with a LOT of blocklists including GAFAM ones.
-
-WireGuard and NVIDIA overclock modules, declarative packages & services, applying my [firefox-hardening](https://zenixark.com/zenixark/firefox-hardening)... this is already getting too long... there is a LOT, it might be better to just take a look around the repository.
+- An installer ([**`zarchinstall`**](./zarchinstall)) that can do a full disk install from a live ISO and be re-ran again post-install to apply any modifications.
+- The entire ESP is a `/boot/EFI/BOOT/BOOTX64.EFI` Unified Kernel Image that's directly booted by the EFI without any `systemd-boot` or `grub` overhead.
+- FDE + `btrfs` subvolumes optimized for I/O performance, security, and snapshots.
+- Custom Secure Boot keys using `sbctl` to sign the UKI to ensure that the initramfs has not been tampered with.
+- Minimalist alternatives such as `iwd` for Wi-Fi instead of `systemd-networkd` or `networkmanager` and `doas` instead of `sudo`.
+- Default-deny `nftables` rules including drop output, except for common ports.
+- Self-hosted DNS Sinkhole with `adguardhome` (only accessible to `127.0.0.1`) with a LOT of blocklists including GAFAM ones.
+- Modules such as WireGuard and NVIDIA overclocking, applying my [firefox-hardening](https://zenixark.com/zenixark/firefox-hardening)... this is already getting too long... it might be better to just take a look around the repository.
 
 ## Usage
-> [!WARNING]
-> This is a REALLY ***REALLY*** opinionated setup that assumes my hardware and philosophy.  
-> It's *not* intended to be reused by others, but if you do then I would very much recommend changing almost everything.
-> Especially modules as they're very specific features, remove their lines from `zarchinstall` if you dont want them.
 
-A full installation is *technically* optional as `zarchinstall` will skip one outside a live Arch ISO, but `configuration()` **HEAVILY** assumes the configuration of one, such as `/home/user` and `/etc/kernel/cmdline`. Otherwise, this repo can just be cloned to `~/.zenixarch` and installed at your own risk as there will 100% be breakage without manual changes.
+> [!NOTE]
+> In a live ISO, `sbctl enroll-keys --tpm-eventlog` can't detect a TPM so Setup Mode should be enabled AFTER `reboot` BEFORE booting the fresh install, then do step 5. I personally have to use that flag or else I get no boot video and an un-accelerated framebuffer after boot as my GPU's GOP driver fails to init. Remove the flag or use `--microsoft` (*if you want to make Secure Boot useless...*) to set up everything in one run.
 
-From a live Arch ISO:
+A full installation is *technically* optional, but `configuration()` **HEAVILY** assumes one was done such as `/home/user` and `/etc/kernel/cmdline`.
+
+*From a live Arch ISO:*
 ```cf
-
-## NOTE: Due to --tpm-eventlog in the sbctl section of zarchinstall, Setup Mode should be enabled after installation before booting into the new install, then run Step 5 to set up SB properly. Removing the flag or using --microsoft (if you want to make secure boot useless) will avoid needing to do this.
-
 ## 1. Connect to the internet
 iwctl --passphrase <wifi password> station <wifi interface> connect <wifi name>
 
-## 2. Install git
+## 2. Install git and clone the repo
 pacman -Sy git
-
-## 3. Clone the repo
 git clone https://zenixark.com/zenixark/zenixarch.git
 
-## 4. Run the installer
+## 3. Run the installer
 cd zenixarch
 DISK=<e.g sda or nvme0n1> PASS=<a strong password> ./zarchinstall
+reboot
 
-## 5. After rebooting, this can be run repeatedly to apply new changes idempotently
+## 4. After rebooting, this can be run repeatedly to apply new changes idempotently
 doas ./zarchinstall
 ```
