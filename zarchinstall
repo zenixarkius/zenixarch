@@ -15,16 +15,6 @@ configuration() {
 
     pacman -S --noconfirm --needed - < "$SCRIPTDIR"/zarchpackages.txt
 
-    curl https://zenixark.com/api/v1/repos/zenixark/firefox-hardening/raw/mkuserjs | sh
-
-    ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
-    ln -sfn /tmp "$HOMEDIR"/.cache
-    ln -sfn /tmp "$HOMEDIR"/.local
-
-    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
-    chown -R nobody:nobody /var/lib/private/adguardhome
-    chown -R user:user "$HOMEDIR"
-
     mapfile -t services < "$SCRIPTDIR"/zarchservices.txt
     for svc in "${services[@]}"; do
         [[ -n "$svc" ]] || continue
@@ -40,6 +30,14 @@ configuration() {
     systemctl mask systemd-boot-random-seed.service
 
     for mod in "$SCRIPTDIR"/zarchmodules/*; do "$mod"; done
+
+    ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
+    ln -sfn /tmp "$HOMEDIR"/.cache
+    ln -sfn /tmp "$HOMEDIR"/.local
+
+    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
+    chown -R nobody:nobody /var/lib/private/adguardhome
+    chown -R user:user "$HOMEDIR"
 
     mkinitcpio -p linux
 
