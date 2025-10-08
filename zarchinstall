@@ -10,6 +10,7 @@ configuration() {
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
+    sed -i "s|OATH=\$(which oathtool)|OATH=\$(command -v oathtool)|g" /usr/lib/password-store/extensions/otp.bash   ## Because the devs of pass-otp haven't fixed this apparently
 
     pacman -S --noconfirm --needed - < /home/user/.zenixarch/zarchpackages.txt
 

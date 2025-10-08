@@ -19,6 +19,7 @@ neovim
 noto-fonts
 nvidia
 opendoas
+pass-otp
 pipewire-jack
 pipewire-pulse
 sbctl
