@@ -1,30 +1,31 @@
 #!/bin/bash
 set -euo pipefail
+SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
 configuration() {
-    mapfile -t files < <(find /home/user/.zenixarch/{etc,home,var} -type f)
+    mapfile -t files < <(find "$SCRIPTDIR"/{etc,home,var} -type f)
     for src in "${files[@]}"; do
-        cmp -s "$src" "/${src#/home/user/.zenixarch/}" || install -Dm644 "$src" "/${src#/home/user/.zenixarch/}"
+        cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/}"
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
     sed -i "s|OATH=\$(which oathtool)|OATH=\$(command -v oathtool)|g" /usr/lib/password-store/extensions/otp.bash   ## Because the devs of pass-otp haven't fixed this apparently
 
-    pacman -S --noconfirm --needed - < /home/user/.zenixarch/zarchpackages.txt
+    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/zarchpackages.txt
 
     curl https://zenixark.com/api/v1/repos/zenixark/firefox-hardening/raw/mkuserjs | sh
 
     ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
-    ln -sfn /tmp /home/user/.cache
-    ln -sfn /tmp /home/user/.local
+    ln -sfn /tmp "$HOMEDIR"/.cache
+    ln -sfn /tmp "$HOMEDIR"/.local
 
     chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
     chown -R nobody:nobody /var/lib/private/adguardhome
-    chown -R user:user /home/user
+    chown -R user:user "$HOMEDIR"
 
-    mapfile -t services < /home/user/.zenixarch/zarchservices.txt
+    mapfile -t services < "$SCRIPTDIR"/zarchservices.txt
     for svc in "${services[@]}"; do
         [[ -n "$svc" ]] || continue
         systemctl enable $NOW "$svc"
@@ -38,7 +39,7 @@ configuration() {
 
     systemctl mask systemd-boot-random-seed.service
 
-    for mod in /home/user/.zenixarch/zarchmodules/*; do "$mod"; done
+    for mod in "$SCRIPTDIR"/zarchmodules/*; do "$mod"; done
 
     mkinitcpio -p linux
 
@@ -96,7 +97,7 @@ if [[ -d /run/archiso ]]; then
     sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
     pacman -Sy --noconfirm archlinux-keyring
 
-    pacstrap /mnt - < "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"/zarchpackages.txt
+    pacstrap /mnt - < "$SCRIPTDIR"/zarchpackages.txt
 
     mv /mnt/boot/vmlinuz-linux /mnt/usr/lib/modules/vmlinuz
     rm -rf /mnt/boot/*
@@ -104,10 +105,10 @@ if [[ -d /run/archiso ]]; then
 
     genfstab -U /mnt >> /mnt/etc/fstab
 
-    cp -r "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" /mnt/.zenixarch/
+    cp -r "$SCRIPTDIR" /mnt/.zenixarch/
 
     arch-chroot /mnt /bin/bash -e <<CHROOT
-    export NOW=""
+    export NOW="" SCRIPTDIR="/home/user/.zenixarch" HOMEDIR="/home/user"
     $(declare -f configuration)
 
     ln -sf "/usr/share/zoneinfo/America/New_York" /etc/localtime
@@ -120,13 +121,14 @@ if [[ -d /run/archiso ]]; then
     chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
     passwd --lock root
 
-    mv /.zenixarch /home/user
+    mv /.zenixarch "$HOMEDIR"
 
     configuration
 CHROOT
 
 else
-    export NOW="--now"
+    HOMEDIR="$(getent passwd 1000 | cut -d: -f6)"
+    export NOW="--now" SCRIPTDIR="$SCRIPTDIR" HOMEDIR="$HOMEDIR"
     configuration
 fi
 

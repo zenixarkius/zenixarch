@@ -19,7 +19,7 @@ I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opini
 > [!NOTE]
 > In a live ISO, `sbctl enroll-keys --tpm-eventlog` can't detect a TPM so Setup Mode should be enabled AFTER `reboot` BEFORE booting the fresh install, then do step 5. I personally have to use that flag or else I get no boot video and an un-accelerated framebuffer after boot as my GPU's GOP driver fails to init. Remove the flag or use `--microsoft` (*if you want to make Secure Boot useless...*) to set up everything in one run.
 
-A full installation is *technically* optional, but `configuration()` **HEAVILY** assumes one was done such as `/home/user` and `/etc/kernel/cmdline`.
+A full installation is *technically* optional but `configuration()` assumes one was done, especially anything `btrfs` related such as `/etc/kernel/cmdline`. Otherwise, just `git clone` this repository into `~/.zenixarch` and skip to step 5. Note that `zarchinstall` will overwrite relevant configs with the ones in the repository without backing anything up, you have been warned.
 
 *From a live Arch ISO:*
 ```cf
