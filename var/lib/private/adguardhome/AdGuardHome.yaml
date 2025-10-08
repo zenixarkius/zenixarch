@@ -4,6 +4,7 @@ http:
     enabled: false
   address: 127.0.0.1:80
   session_ttl: 720h
+users: []
 auth_attempts: 1
 block_auth_min: 15
 http_proxy: ""
@@ -21,6 +22,10 @@ dns:
   refuse_any: true
   upstream_dns:
     - https://dns.quad9.net/dns-query
+    - https://9.9.9.9/dns-query
+    - https://149.112.112.112/dns-query
+    - https://[2620:fe::11]/dns-query
+    - https://[2620:fe::fe:11]/dns-query
   upstream_dns_file: ""
   bootstrap_dns:
     - https://9.9.9.9/dns-query
