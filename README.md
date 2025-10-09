@@ -5,14 +5,14 @@ I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opini
 
 ## Core Features
 
-- An installer ([**`zarchinstall`**](./zarchinstall)) that can do a full disk install from a live ISO and be re-ran again post-install to apply any modifications.
+- An [idempotent installer](./zarchinstall) that can do a full disk install from a live ISO and be re-ran again post-install to apply any modifications.
 - The entire ESP is a `/boot/EFI/BOOT/BOOTX64.EFI` Unified Kernel Image that's directly booted by the EFI without any `systemd-boot` or `grub` overhead.
 - FDE + `btrfs` subvolumes optimized for I/O performance, security, and snapshots.
 - Custom Secure Boot keys using `sbctl` to sign the UKI to ensure that the initramfs has not been tampered with.
 - Minimalist alternatives such as `iwd` for Wi-Fi instead of `systemd-networkd` or `networkmanager` and `doas` instead of `sudo`.
 - Default-deny `nftables` rules including drop output, except for common ports.
 - Self-hosted DNS Sinkhole with `adguardhome` (only accessible to `127.0.0.1`) with a LOT of blocklists including GAFAM ones.
-- Modules such as [WireGuard](./zarchmodules/wireguard), [NVIDIA overclocking](./zarchmodules/overclock), creating a user.js for Firefox from [arkenfox](https://github.com/arkenfox/user.js/blob/master/user.js) + [my own changes](./zarchmodules/userjs)..., this is already getting too long... it might be better to just take a look around the repository.
+- Modules such as [WireGuard](./zarch/modules/wireguard), [NVIDIA overclocking](./zarch/modules/overclock), creating a user.js for Firefox from [arkenfox](https://github.com/arkenfox/user.js/blob/master/user.js) + [my own changes](./zarch/modules/userjs)..., this is already getting too long... it might be better to just take a look around the repository.
 
 ## Usage
 
@@ -31,10 +31,9 @@ pacman -Sy git
 git clone https://zenixark.com/zenixark/zenixarch.git
 
 ## 3. Run the installer
-cd zenixarch
-DISK=<e.g sda or nvme0n1> PASS=<a strong password> ./zarchinstall
+DISK=<e.g sda or nvme0n1> PASS=<a strong password> ./zenixarch/zarchinstall
 reboot
 
 ## 4. After rebooting, this can be run repeatedly to apply new changes idempotently
-doas ./zarchinstall
+doas ~/.zenixarch/zarchinstall
 ```

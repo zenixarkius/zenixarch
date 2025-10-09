@@ -13,9 +13,9 @@ configuration() {
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
     sed -i "s|OATH=\$(which oathtool)|OATH=\$(command -v oathtool)|g" /usr/lib/password-store/extensions/otp.bash   ## Because the devs of pass-otp haven't fixed this apparently
 
-    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/zarchpackages.txt
+    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/zarch/packages.txt
 
-    mapfile -t services < "$SCRIPTDIR"/zarchservices.txt
+    mapfile -t services < "$SCRIPTDIR"/zarch/services.txt
     for svc in "${services[@]}"; do
         [[ -n "$svc" ]] || continue
         systemctl enable $NOW "$svc"
@@ -29,7 +29,7 @@ configuration() {
 
     systemctl mask systemd-boot-random-seed.service
 
-    for mod in "$SCRIPTDIR"/zarchmodules/*; do "$mod"; done
+    for mod in "$SCRIPTDIR"/zarch/modules/*; do "$mod"; done
 
     ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
     ln -sfn /tmp "$HOMEDIR"/.cache
@@ -95,7 +95,7 @@ if [[ -d /run/archiso ]]; then
     sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
     pacman -Sy --noconfirm archlinux-keyring
 
-    pacstrap /mnt - < "$SCRIPTDIR"/zarchpackages.txt
+    pacstrap /mnt - < "$SCRIPTDIR"/zarch/packages.txt
 
     mv /mnt/boot/vmlinuz-linux /mnt/usr/lib/modules/vmlinuz
     rm -rf /mnt/boot/*
