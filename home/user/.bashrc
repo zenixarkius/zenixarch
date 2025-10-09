@@ -9,7 +9,6 @@
 bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
-shopt -s autocd
 shopt -s histappend
 
 export PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
