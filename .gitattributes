@@ -1,1 +1,1 @@
-home/user/.config/.mozilla/user/* linguist-vendored
+*.js linguist-vendored
