@@ -18,6 +18,8 @@ opendoas
 pass-otp
 pipewire-pulse
 sbctl
+signal-desktop
 slurp
+torbrowser-launcher
 ttf-hack-nerd
 wl-clipboard
