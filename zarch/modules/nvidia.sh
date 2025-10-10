@@ -2,6 +2,8 @@
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
+pacman -S --noconfirm --needed nvidia
+
 cat > /etc/systemd/system/overclock.service << 'SERVICE'
 [Unit]
 Description=Set NVIDIA overclocks

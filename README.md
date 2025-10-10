@@ -1,7 +1,7 @@
 # Zenixark's Arch Linux Setup
 **My minimalist privacy, security, and performance focused Arch system fully reproducible with one command, inspired by NixOS and Ansible**
 
-I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opinionated install reproducible in `bash`. This is *not* intended to be reused by others as it assumes my hardware and philosophy, but if you do then I would very much recommend changing almost everything.
+I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opinionated install reproducible in `bash`. This is *not* intended to be reused by others as it assumes my hardware and philosophy.
 
 ## Core Features
 
@@ -12,7 +12,7 @@ I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opini
 - Minimalist alternatives such as `iwd` for Wi-Fi instead of `systemd-networkd` or `networkmanager` and `doas` instead of `sudo`.
 - Default-deny `nftables` rules including drop output, except for common ports.
 - Self-hosted DNS Sinkhole with `adguardhome` (only accessible to `127.0.0.1`) with a LOT of blocklists including GAFAM ones.
-- Modules such as [WireGuard](./zarch/modules/wireguard), [NVIDIA overclocking](./zarch/modules/overclock), creating a user.js for Firefox from [arkenfox](https://github.com/arkenfox/user.js/blob/master/user.js) + [my own changes](./zarch/modules/userjs)..., this is already getting too long... it might be better to just take a look around the repository.
+- [WireGuard](./zarch/modules/wireguard.sh), [NVIDIA overclocking](./zarch/modules/nvidia.sh), creating a user.js for Firefox from [arkenfox](https://github.com/arkenfox/user.js/blob/master/user.js) + [my own changes](./zarch/modules/firefox.sh)..., this is already getting too long... it might be better to just take a look around the repository.
 
 ## Usage
 
@@ -34,6 +34,6 @@ git clone https://zenixark.com/zenixark/zenixarch.git
 DISK=<e.g sda or nvme0n1> PASS=<a strong password> ./zenixarch/zarchinstall
 reboot
 
-## 4. After rebooting, this can be run repeatedly to apply new changes idempotently
-doas ~/.zenixarch/zarchinstall
+## 4. After rebooting, this can be run repeatedly from the repository directory to apply new changes idempotently
+doas ./zarchinstall
 ```

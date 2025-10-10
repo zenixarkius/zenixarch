@@ -1,4 +1,8 @@
-#!/bin/sh
+#!/bin/bash
+
+(( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
+
+pacman -S --noconfirm --needed firefox firefox-ublock-origin noto-fonts pipewire-jack
 
 curl -s https://raw.githubusercontent.com/arkenfox/user.js/master/user.js | install -Dm644 /dev/stdin "$HOMEDIR"/.mozilla/firefox/user/user.js
 

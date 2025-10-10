@@ -1,8 +1,6 @@
 adguardhome
 base
 btrfs-progs
-firefox
-firefox-ublock-origin
 foot
 git
 grim
@@ -16,11 +14,8 @@ linux
 linux-firmware-intel
 linux-firmware-realtek
 neovim
-noto-fonts
-nvidia
 opendoas
 pass-otp
-pipewire-jack
 pipewire-pulse
 sbctl
 slurp
