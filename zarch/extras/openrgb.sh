@@ -1,5 +1,7 @@
 #!/bin/bash
 
+## This is seperate because I yearn to not need RGB, but without setting it my desktop looks like ass...
+
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
 [[ ! $(pacman -Q openrgb | awk '{print $2}') == "1.0rc1-2" ]] && pacman -S --noconfirm --needed openrgb

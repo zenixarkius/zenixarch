@@ -2,4 +2,6 @@ adguardhome.service
 getty@.service
 iwd.service
 nftables.service
+overclock.service
 systemd-timesyncd.service
+wireguard.service

@@ -2,6 +2,8 @@ adguardhome
 base
 btrfs-progs
 foot
+firefox
+firefox-ublock-origin
 git
 grim
 hyprland
@@ -14,12 +16,16 @@ linux
 linux-firmware-intel
 linux-firmware-realtek
 neovim
+noto-fonts
+nvidia
 opendoas
 pass-otp
+pipewire-jack
 pipewire-pulse
 sbctl
 signal-desktop
 slurp
 torbrowser-launcher
 ttf-hack-nerd
+wireguard-tools
 wl-clipboard

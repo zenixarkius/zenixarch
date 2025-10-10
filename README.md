@@ -12,7 +12,7 @@ I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opini
 - Minimalist alternatives such as `iwd` for Wi-Fi instead of `systemd-networkd` or `networkmanager` and `doas` instead of `sudo`.
 - Default-deny `nftables` rules including drop output, except for common ports.
 - Self-hosted DNS Sinkhole with `adguardhome` (only accessible to `127.0.0.1`) with a LOT of blocklists including GAFAM ones.
-- [WireGuard](./zarch/modules/wireguard.sh), [NVIDIA overclocking](./zarch/modules/nvidia.sh), creating a user.js for Firefox from [arkenfox](https://github.com/arkenfox/user.js/blob/master/user.js) + [my own changes](./zarch/modules/firefox.sh)..., this is already getting too long... it might be better to just take a look around the repository.
+- [WireGuard](./etc/systemd/system/wireguard.service), [NVIDIA overclocking](./etc/systemd/system/overclock.service), creating a user.js for Firefox from [arkenfox](https://github.com/arkenfox/user.js/blob/master/user.js) + [my own changes](./home/user/.mozilla/firefox/user/user.js)..., this is already getting too long... it might be better to just take a look around the repository.
 
 ## Usage
 

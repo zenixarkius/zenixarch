@@ -11,7 +11,8 @@ configuration() {
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
-    sed -i "s|OATH=\$(which oathtool)|OATH=\$(command -v oathtool)|g" /usr/lib/password-store/extensions/otp.bash   ## Because the devs of pass-otp haven't fixed this apparently
+    sed -i "s|OATH=\$(which oathtool)|OATH=\$(command -v oathtool)|g" /usr/lib/password-store/extensions/otp.bash
+    ## ^ Because the devs of pass-otp haven't fixed this apparently
 
     pacman -S --noconfirm --needed - < "$SCRIPTDIR"/zarch/packages.txt
 
@@ -29,11 +30,11 @@ configuration() {
 
     systemctl mask systemd-boot-random-seed.service
 
-    for mod in "$SCRIPTDIR"/zarch/modules/*; do "$mod"; done
+    for ex in "$SCRIPTDIR"/zarch/extras/*; do "$ex"; done
 
-    ## The .local symlink is just an experiment, I might revert it later but for the time being I have no purpose for its existence
     ln -sfn /tmp "$HOMEDIR"/.cache
     ln -sfn /tmp "$HOMEDIR"/.local
+    ## ^ This symlink is just an experiment, I might revert it but for now I have no purpose for a persistent .local
 
     chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
     chown -R nobody:nobody /var/lib/private/adguardhome
