@@ -1,5 +1,6 @@
 #!/bin/bash
 
+## Extras should only be ran by zarchinstall
 ## This is seperate because I yearn to not need RGB, but without setting it my desktop looks like ass...
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
