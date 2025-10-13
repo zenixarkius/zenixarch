@@ -12,9 +12,6 @@ configuration() {
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
 
-    sed -i 's|^;.*cookie-file =.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf # Fix Steam creating .pulse-cookie
-    sed -i "s|OATH=\$(which oathtool)|OATH=\$(command -v oathtool)|g" /usr/lib/password-store/extensions/otp.bash # Fix `which` not found by pass otp
-
     pacman -S --noconfirm --needed - < "$SCRIPTDIR"/zarch/packages.txt
 
     mapfile -t services < "$SCRIPTDIR"/zarch/services.txt
