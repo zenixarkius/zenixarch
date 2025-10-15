@@ -99,10 +99,10 @@ done
 
 systemctl mask --root=/mnt/host systemd-boot-random-seed.service
 
-for ex in "$SCRIPTDIR"/extras/*; do
-    cp "$ex" /mnt/host
-    arch-chroot /mnt/host bash "/${ex#"$SCRIPTDIR"/extras/}"
-    rm "/mnt/host/${ex#"$SCRIPTDIR"/extras/}"
+for opt in "$SCRIPTDIR"/00_host/optional/*; do
+    cp "$opt" /mnt/host
+    arch-chroot /mnt/host bash "/${opt#"$SCRIPTDIR"/00_host/optional/}"
+    rm "/mnt/host/${opt#"$SCRIPTDIR"/00_host/optional/}"
 done
 
 arch-chroot /mnt/host bash -e << HOST
