@@ -36,7 +36,7 @@ configuration() {
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user "$HOMEDIR"
 
-    mkinitcpio -p linux
+    mkinitcpio -p linux-cachyos
 
     if sbctl status | grep -q "Setup Mode:.*Enabled"; then
         sbctl create-keys
@@ -91,6 +91,10 @@ if [[ -d /run/archiso ]]; then
     reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
     sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
     pacman -Sy --noconfirm archlinux-keyring
+
+    curl https://mirror.cachyos.org/cachyos-repo.tar.xz > cachyos-repo.tar.xz
+    tar xvf cachyos-repo.tar.xz
+    (cd cachyos-repo && ./cachyos-repo.sh)
 
     pacstrap /mnt - < "$SCRIPTDIR"/zarch/packages.txt
 
