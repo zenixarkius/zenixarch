@@ -197,6 +197,7 @@ mkinitcpio -p linux
 TEMPLATE
 
 umount -R /mnt/template
+qemu-nbd --disconnect /dev/nbd0
 qemu-nbd --disconnect /dev/nbd1
 
 arch-chroot /mnt/host bash -e << 'HOST'
@@ -232,7 +233,6 @@ umount /mnt
 qemu-nbd --disconnect /dev/nbd4
 HOST
 
-qemu-nbd --disconnect /dev/nbd0
 modprobe nbd
 
 echo -e "\e[32mDone!\e[0m"
