@@ -207,32 +207,32 @@ qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/network.qcow2
 
 qemu-nbd --connect=/dev/nbd2 /var/lib/libvirt/images/proxy.qcow2
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd2p2 /mnt
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/var/cache
 systemctl enable --root=/mnt adguardhome
 systemctl enable --root=/mnt/wireguard
-umount /mnt
+umount -R /mnt
 qemu-nbd --disconnect /dev/nbd2
 
 qemu-nbd --connect=/dev/nbd3 /var/lib/libvirt/images/firewall.qcow2
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/var/cache
 systemctl enable --root=/mnt nftables
-umount /mnt
+umount -R /mnt
 qemu-nbd --disconnect /dev/nbd3
 
 qemu-nbd --connect=/dev/nbd4 /var/lib/libvirt/images/network.qcow2
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd5p2 /mnt
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/var/cache
 systemctl enable --root=/mnt iwd
 systemctl enable --root=/mnt systemd-timesyncd
-umount /mnt
+umount -R /mnt
 qemu-nbd --disconnect /dev/nbd4
 HOST
 
-modprobe nbd
+modprobe -r nbd
 
 echo -e "\e[32mDone!\e[0m"
