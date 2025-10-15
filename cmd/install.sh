@@ -217,17 +217,17 @@ mkdir /mnt/{2,3,4}
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd2p2 /mnt/2
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/2/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/2/var/cache
-systemctl enable --root=/mnt adguardhome wireguard
+systemctl enable --root=/mnt/2 adguardhome wireguard
 
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt/3
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/3/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/3/var/cache
-systemctl enable --root=/mnt nftables
+systemctl enable --root=/mnt/3 nftables
 
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt/4
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/4/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/4/var/cache
-systemctl enable --root=/mnt iwd systemd-timesyncd
+systemctl enable --root=/mnt/4 iwd systemd-timesyncd
 
 umount -R /mnt/*
 rmdir /mnt/*
