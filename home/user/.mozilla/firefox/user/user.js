@@ -1,22 +1,14 @@
 // These are my personal extensions of `https://github.com/arkenfox/user.js/blob/master/user.js`, which a copy of can be found beneath my extensions.
 
-// ========== TOR ==========
-
-// Tor specific
-user_pref("privacy.resistFingerprinting.letterboxing.dimensions", "1400x900");
-user_pref("extensions.hideNoScript", false);
-user_pref("browser.security_level.security_slider", 1);
-user_pref("torbrowser.settings.quickstart.enabled", true);
-
-// Shared between Tor and Firefox
-user_pref("browser.startup.homepage", "chrome://browser/content/blanktab.html");
-user_pref("browser.newtabpage.enabled", false);
-user_pref("browser.urlbar.suggest.history", false);
-user_pref("browser.urlbar.suggest.bookmark", false);
-user_pref("browser.urlbar.suggest.openpage", false);
-user_pref("browser.urlbar.suggest.engines", false);
-
 // ========== UI / MISC TWEAKS ==========
+
+// My preferred toolbar layout
+user_pref("browser.uiCustomization.state", "{\"placements\":{\"widget-overflow-fixed-list\":[],\"unified-extensions-area\":[],\"nav-bar\":[\"back-button\",\"forward-button\",\"vertical-spacer\",\"urlbar-container\",\"fxa-toolbar-menu-button\",\"ublock0_raymondhill_net-browser-action\",\"unified-extensions-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[\"tabbrowser-tabs\"],\"vertical-tabs\":[],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[],\"dirtyAreaCache\":[],\"currentVersion\":23,\"newElementCount\":3}");
+
+// Disable ugly UI elements
+user_pref("browser.tabs.inTitlebar", 0);
+user_pref("browser.toolbars.bookmarks.visibility", "never");
+user_pref("extensions.unifiedExtensions.button.always_visible", false);
 
 user_pref("clipboard.autocopy", false);
 user_pref("middlemouse.paste", false);
@@ -24,17 +16,9 @@ user_pref("browser.download.dir", "/home/user/");
 user_pref("browser.tabs.closeWindowWithLastTab", false);
 user_pref("browser.tabs.groups.enabled", false);
 
-// Disable ugly UI elements
-user_pref("browser.tabs.inTitlebar", 0);
-user_pref("browser.toolbars.bookmarks.visibility", "never");
-user_pref("extensions.unifiedExtensions.button.always_visible", false);
-
-// My preferred toolbar layout
-user_pref("browser.uiCustomization.state", "{\"placements\":{\"widget-overflow-fixed-list\":[],\"unified-extensions-area\":[],\"nav-bar\":[\"back-button\",\"forward-button\",\"vertical-spacer\",\"urlbar-container\",\"fxa-toolbar-menu-button\",\"ublock0_raymondhill_net-browser-action\",\"unified-extensions-button\"],\"toolbar-menubar\":[\"menubar-items\"],\"TabsToolbar\":[\"tabbrowser-tabs\"],\"vertical-tabs\":[],\"PersonalToolbar\":[\"personal-bookmarks\"]},\"seen\":[],\"dirtyAreaCache\":[],\"currentVersion\":23,\"newElementCount\":3}");
-
 // ========== ADVANCED HARDENING ==========
 
-// 1600x900 appears is arkenfox's default new window size so I enforce letterboxing to it
+// 1600x900 appears is arkenfox's default new window size, so is on so I enforce letterboxing to that.
 user_pref("privacy.resistFingerprinting", true);
 user_pref("privacy.resistFingerprinting.letterboxing", true);
 user_pref("privacy.resistFingerprinting.letterboxing.dimensions", "1600x900");
@@ -96,8 +80,12 @@ user_pref("browser.search.separatePrivateDefault", false);
 // Search Suggestions
 user_pref("browser.urlbar.suggest.recentsearches", false);
 
-// Address Bar -- anything here shared with Tor is at the top of this file
+// Address Bar
+user_pref("browser.urlbar.suggest.history", false);
+user_pref("browser.urlbar.suggest.bookmark", false);
+user_pref("browser.urlbar.suggest.openpage", false);
 user_pref("browser.urlbar.suggest.topsites", false);
+user_pref("browser.urlbar.suggest.engines", false);
 user_pref("browser.urlbar.suggest.quickactions", false);
 
 // ========== about:preferences#privacy ==========
