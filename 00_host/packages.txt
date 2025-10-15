@@ -1,5 +1,6 @@
 base
 btrfs-progs
+dnsmasq
 foot
 grim
 hyprland

@@ -2,14 +2,16 @@
 set -euo pipefail
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
-[[ -d /run/archiso ]] || echo -e "\e[31mNot in an Arch Linux live ISO\e[0m" && exit 1
+[[ -d /run/archiso ]] || { echo -e "\e[31mNot in an Arch Linux live ISO\e[0m"; exit 1; }
 
 : "$DISK:?" "$PASS:?"
 
 read -rp $'\e[31mThis will wipe every little thing on your disk and reformat\n\e[31mAlso, you should know EVERYTHING this does before running it\n\e[31mType "IK" to continue: \e[0m' CONFIRM
 [[ "$CONFIRM" != "IK" ]] && echo -e "\e[31mYou didn't confirm you knew\e[0m" && exit 1
 
-mountpoint -q /mnt && umount -R /mnt && cryptsetup close cryptroot
+umount -R /mnt &>/dev/null
+umount -R /mnt/* &>/dev/null
+cryptsetup close cryptroot &>/dev/null
 
 nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
 
@@ -39,7 +41,7 @@ umount /mnt
 mkdir -p /mnt/{host,template,user,proxy,firewall,network}
 
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt/host
-mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
+mkdir -p /mnt/host/{boot,home,var/{log,cache,lib/libvirt/images}}
 mount -o defaults,nodev,nosuid,noexec,umask=0077 "/dev/${DISK}1" /mnt/host/boot
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/host/home
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/host/var/log
@@ -77,7 +79,7 @@ HOST
 
 mapfile -t files < <(find "$SCRIPTDIR"/00_host/{etc,home} -type f)
 for src in "${files[@]}"; do
-    cmp -s "$src" "/mnt/host/${src#"$SCRIPTDIR"/host/}" || install -Dm644 "$src" "/mnt/host/${src#"$SCRIPTDIR"/host/}"
+    cmp -s "$src" "/mnt/host/${src#"$SCRIPTDIR"/00_host/}" || install -Dm44 "$src" "/mnt/host/${src#"$SCRIPTDIR"/00_host/}"
 done
 
 sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /mnt/host/etc/kernel/cmdline
@@ -99,8 +101,10 @@ done
 
 systemctl mask --root=/mnt/host systemd-boot-random-seed.service
 
-for ex in "$SCRIPTDIR"/cmd/extras/*; do
-    arch-chroot /mnt/host bash "$ex"
+for ex in "$SCRIPTDIR"/extras/*; do
+    cp "$ex" /mnt/host
+    arch-chroot /mnt/host bash "/${ex#"$SCRIPTDIR"/extras/}"
+    rm "/mnt/host/${ex#"$SCRIPTDIR"/extras/}"
 done
 
 arch-chroot /mnt/host bash -e << HOST
@@ -127,13 +131,13 @@ sgdisk -n 2:0:0 -t 2:8300 -c 2:"Linux filesystem" /dev/nbd0
 
 sgdisk --zap-all /dev/nbd1
 sgdisk -g /dev/nbd1
-sgdisk -n 1:0:0 -t 2:8300 -c 2:"Linux filesystem" /dev/nbd1
+sgdisk -n 1:0:0 -t 1:8300 -c 1:"Linux filesystem" /dev/nbd1
 
 mkfs.fat -F 32 /dev/nbd0p1
 mkfs.btrfs -f /dev/nbd0p2
 mkfs.btrfs -f /dev/nbd1p1
 
-mount /dev/ndp0p2 /mnt/template
+mount /dev/nbd0p2 /mnt/template
 btrfs su cr /mnt/template/@
 btrfs su cr /mnt/template/@var_log
 btrfs su cr /mnt/template/@var_cache
@@ -172,15 +176,15 @@ chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
 passwd --lock root
 TEMPLATE
 
-mapfile -t files < <(find "$SCRIPTDIR"/01_template/{etc,home} -type f)
+mapfile -t files < <(find "$SCRIPTDIR"/01_template/{etc,home,var} -type f)
 for src in "${files[@]}"; do
-    cmp -s "$src" "/mnt/template/${src#"$SCRIPTDIR"/template/}" || install -Dm644 "$src" "/mnt/template/${src#"$SCRIPTDIR"/template/}"
+    cmp -s "$src" "/mnt/template/${src#"$SCRIPTDIR"/01_template/}" || echo -Dm644 "$src" "/mnt/template/${src#"$SCRIPTDIR"/01_template/}"
 done
 
 sed -i "s|\${UUID}|$(blkid -s UUID -o value /dev/nbd0p2)|g" /mnt/template/etc/kernel/cmdline
 
 for svc in $(systemctl list-unit-files --root=/mnt/template --type=service --state=enabled --no-legend | awk '{print $1}'); do
-    [[ "getty@.service" != "$svc" ]] || systemctl disable --root=/mnt/template  "$svc"
+    [[ "getty@.service" != "$svc" ]] || systemctl disable --root=/mnt/template "$svc"
 done
 
 systemctl mask --root=/mnt/template systemd-boot-random-seed.service
@@ -195,10 +199,10 @@ mkinitcpio -p linux
 TEMPLATE
 
 arch-chroot /mnt/host bash -e << 'HOST'
-qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 /var/lib/libvirt/images/user.qcow2
-qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 /var/lib/libvirt/images/proxy.qcow2
-qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 /var/lib/libvirt/images/firewall.qcow2
-qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 /var/lib/libvirt/images/network.qcow2
+qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/user.qcow2
+qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/proxy.qcow2
+qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/firewall.qcow2
+qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/network.qcow2
 HOST
 
 qemu-nbd --connect=/dev/nbd2 /mnt/host/var/lib/libvirt/images/proxy.qcow2
@@ -222,7 +226,8 @@ mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_ca
 systemctl enable --root=/mnt/network iwd
 systemctl enable --root=/mnt/network systemd-timesyncd
 
-umount -R /mnt
+umount -R /mnt/* &>/dev/null
+cryptsetup close cryptroot
 
 qemu-nbd --disconnect /dev/nbd0
 qemu-nbd --disconnect /dev/nbd1
@@ -231,9 +236,5 @@ qemu-nbd --disconnect /dev/nbd3
 qemu-nbd --disconnect /dev/nbd4
 
 modprobe nbd
-HOST
-
-umount -R /mnt
-cryptsetup close cryptroot
 
 echo -e "\e[32mDone!\e[0m"
