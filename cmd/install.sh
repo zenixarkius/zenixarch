@@ -77,7 +77,7 @@ HOST
 
 mapfile -t files < <(find "$SCRIPTDIR"/00_host/{etc,home} -type f)
 for src in "${files[@]}"; do
-    cmp -s "$src" "/mnt/host/${src#"$SCRIPTDIR"/00_host/}" || install -Dm44 "$src" "/mnt/host/${src#"$SCRIPTDIR"/00_host/}"
+    cmp -s "$src" "/mnt/host/${src#"$SCRIPTDIR"/00_host/}" || install -Dm644 "$src" "/mnt/host/${src#"$SCRIPTDIR"/00_host/}"
 done
 
 sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /mnt/host/etc/kernel/cmdline
@@ -94,7 +94,7 @@ for svc in "${services[@]}"; do
 done
 
 for svc in $(systemctl list-unit-files --root=/mnt/host --type=service --state=enabled --no-legend | awk '{print $1}'); do
-    [[ "${services[*]}" != "$svc" ]] || systemctl disable --root=/mnt/host "$svc"
+    [[ "${services[*]}" =~ $svc ]] || systemctl disable --root=/mnt/host "$svc"
 done
 
 systemctl mask --root=/mnt/host systemd-boot-random-seed.service
@@ -182,7 +182,7 @@ done
 sed -i "s|\${UUID}|$(blkid -s UUID -o value /dev/nbd0p2)|g" /mnt/template/etc/kernel/cmdline
 
 for svc in $(systemctl list-unit-files --root=/mnt/template --type=service --state=enabled --no-legend | awk '{print $1}'); do
-    [[ "getty@.service" != "$svc" ]] || systemctl disable --root=/mnt/template "$svc"
+    [[ "getty@.service" == "$svc" ]] || systemctl disable --root=/mnt/template "$svc"
 done
 
 systemctl mask --root=/mnt/template systemd-boot-random-seed.service
@@ -197,6 +197,7 @@ mkinitcpio -p linux
 TEMPLATE
 
 umount -R /mnt/template
+sleep 5
 qemu-nbd --disconnect /dev/nbd0
 qemu-nbd --disconnect /dev/nbd1
 
@@ -207,29 +208,33 @@ qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/network.qcow2
 
 qemu-nbd --connect=/dev/nbd2 /var/lib/libvirt/images/proxy.qcow2
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd2p2 /mnt
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/var/cache
-systemctl enable --root=/mnt adguardhome
-systemctl enable --root=/mnt/wireguard
-umount -R /mnt
-qemu-nbd --disconnect /dev/nbd2
-
 qemu-nbd --connect=/dev/nbd3 /var/lib/libvirt/images/firewall.qcow2
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/var/cache
-systemctl enable --root=/mnt nftables
-umount -R /mnt
-qemu-nbd --disconnect /dev/nbd3
-
 qemu-nbd --connect=/dev/nbd4 /var/lib/libvirt/images/network.qcow2
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/var/cache
-systemctl enable --root=/mnt iwd
-systemctl enable --root=/mnt systemd-timesyncd
-umount -R /mnt
+sleep 5
+
+mkdir /mnt/{2,3,4}
+
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd2p2 /mnt/2
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/2/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/2/var/cache
+systemctl enable --root=/mnt adguardhome wireguard
+
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt/3
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/3/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/3/var/cache
+systemctl enable --root=/mnt nftables
+
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt/4
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/4/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/4/var/cache
+systemctl enable --root=/mnt iwd systemd-timesyncd
+
+umount -R /mnt/*
+rmdir /mnt/*
+
+sleep 5
+qemu-nbd --disconnect /dev/nbd2
+qemu-nbd --disconnect /dev/nbd3
 qemu-nbd --disconnect /dev/nbd4
 HOST
 
