@@ -1,7 +1,6 @@
 #!/bin/bash
 
 ## Extras should only be ran by zarchinstall
-## This is seperate because basically all of the performance tweaks in this repo are NVIDIA related.
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
@@ -26,7 +25,3 @@ WantedBy=multi-user.target
 SERVICE
 
 systemctl enable $NOW overclock
-
-[[ "$(tail -c1 /etc/kernel/cmdline)" = "" ]] && truncate -s -1 /etc/kernel/cmdline
-grep -s 'nvidia.NVreg' /etc/kernel/cmdline || echo ' nvidia.NVreg_EnableGpuFirmware=0 nvidia.NVreg_UsePageAttributeTable=1' >> /etc/kernel/cmdline
-
