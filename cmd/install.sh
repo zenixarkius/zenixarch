@@ -38,7 +38,7 @@ btrfs su cr /mnt/@var_lib_libvirt_images
 chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
 umount /mnt
 
-mkdir -p /mnt/{host,template,user,proxy,firewall,network}
+mkdir -p /mnt/{host,template}
 
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt/host
 mkdir -p /mnt/host/{boot,home,var/{log,cache,lib/libvirt/images}}
@@ -199,35 +199,38 @@ mkinitcpio -p linux
 TEMPLATE
 
 arch-chroot /mnt/host bash -e << 'HOST'
+qemu-nbd --disconnect /dev/nbd0
+qemu-nbd --disconnect /dev/nbd1
+
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/user.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/proxy.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/firewall.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/network.qcow2
 
-qemu-nbd --connect=/dev/nbd2 /mnt/host/var/lib/libvirt/images/proxy.qcow2
-qemu-nbd --connect=/dev/nbd3 /mnt/host/var/lib/libvirt/images/firewall.qcow2
-qemu-nbd --connect=/dev/nbd4 /mnt/host/var/lib/libvirt/images/network.qcow2
+qemu-nbd --connect=/dev/nbd2 /var/lib/libvirt/images/proxy.qcow2
+qemu-nbd --connect=/dev/nbd3 /var/lib/libvirt/images/firewall.qcow2
+qemu-nbd --connect=/dev/nbd4 /var/lib/libvirt/images/network.qcow2
 
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt/proxy
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/proxy/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/proxy/var/cache
-systemctl enable --root=/mnt/proxy adguardhome
-systemctl enable --root=/mnt/proxy wireguard
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/var/cache
+systemctl enable --root=/mnt adguardhome
+systemctl enable --root=/mnt/wireguard
+umount /mnt
 
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt/firewall
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/firewall/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/firewall/var/cache
-systemctl enable --root=/mnt/firewall nftables
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/var/cache
+systemctl enable --root=/mnt nftables
+umount /mnt
 
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd5p2 /mnt/network
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/network/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/network/var/cache
-systemctl enable --root=/mnt/network iwd
-systemctl enable --root=/mnt/network systemd-timesyncd
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd5p2 /mnt
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/var/cache
+systemctl enable --root=/mnt iwd
+systemctl enable --root=/mnt systemd-timesyncd
+umount /mnt
 
-
-qemu-nbd --disconnect /dev/nbd0
-qemu-nbd --disconnect /dev/nbd1
 qemu-nbd --disconnect /dev/nbd2
 qemu-nbd --disconnect /dev/nbd3
 qemu-nbd --disconnect /dev/nbd4
