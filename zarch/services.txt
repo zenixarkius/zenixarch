@@ -1,6 +1,0 @@
-adguardhome.service
-getty@.service
-iwd.service
-nftables.service
-systemd-timesyncd.service
-wireguard.service

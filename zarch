@@ -1,0 +1,12 @@
+#!/bin/bash
+SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export SCRIPTDIR="$SCRIPTDIR"
+
+case "$1" in
+  install) bash "$SCRIPTDIR/cmd/install.sh" ;;
+  secure-boot) bash "$SCRIPTDIR/cmd/secure-boot.sh" ;;
+  *)
+    echo "Unknown command: $1"
+    exit 1
+    ;;
+esac

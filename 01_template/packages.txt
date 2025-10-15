@@ -1,0 +1,13 @@
+adguardhome
+base
+btrfs-progs
+firefox
+firefox-ublock-origin
+git
+iptables-nft
+iwd
+linux
+noto-fonts
+pipewire-jack
+signal-desktop
+wireguard-tools
