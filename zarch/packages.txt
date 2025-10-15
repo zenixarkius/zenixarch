@@ -25,7 +25,6 @@ pass-otp
 pipewire-jack
 pipewire-pulse
 sbctl
-signal-desktop
 slurp
 ttf-hack-nerd
 wireguard-tools
