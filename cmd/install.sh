@@ -2,16 +2,16 @@
 set -euo pipefail
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
-[[ -d /run/archiso ]] || { echo -e "\e[31mNot in an Arch Linux live ISO\e[0m"; exit 1; }
+[[ ! -d /run/archiso ]] && echo -e "\e[31mNot in an Arch Linux live ISO\e[0m" && exit 1
 
 : "$DISK:?" "$PASS:?"
 
 read -rp $'\e[31mThis will wipe every little thing on your disk and reformat\n\e[31mAlso, you should know EVERYTHING this does before running it\n\e[31mType "IK" to continue: \e[0m' CONFIRM
 [[ "$CONFIRM" != "IK" ]] && echo -e "\e[31mYou didn't confirm you knew\e[0m" && exit 1
 
-umount -R /mnt &>/dev/null
-umount -R /mnt/* &>/dev/null
-cryptsetup close cryptroot &>/dev/null
+umount -R /mnt || true
+umount -R /mnt/* || true
+cryptsetup close cryptroot || true
 
 nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
 
@@ -178,7 +178,7 @@ TEMPLATE
 
 mapfile -t files < <(find "$SCRIPTDIR"/01_template/{etc,home,var} -type f)
 for src in "${files[@]}"; do
-    cmp -s "$src" "/mnt/template/${src#"$SCRIPTDIR"/01_template/}" || echo -Dm644 "$src" "/mnt/template/${src#"$SCRIPTDIR"/01_template/}"
+    cmp -s "$src" "/mnt/template/${src#"$SCRIPTDIR"/01_template/}" || install -Dm644 "$src" "/mnt/template/${src#"$SCRIPTDIR"/01_template/}"
 done
 
 sed -i "s|\${UUID}|$(blkid -s UUID -o value /dev/nbd0p2)|g" /mnt/template/etc/kernel/cmdline
@@ -203,7 +203,6 @@ qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/proxy.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/firewall.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/network.qcow2
-HOST
 
 qemu-nbd --connect=/dev/nbd2 /mnt/host/var/lib/libvirt/images/proxy.qcow2
 qemu-nbd --connect=/dev/nbd3 /mnt/host/var/lib/libvirt/images/firewall.qcow2
@@ -226,14 +225,16 @@ mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_ca
 systemctl enable --root=/mnt/network iwd
 systemctl enable --root=/mnt/network systemd-timesyncd
 
-umount -R /mnt/* &>/dev/null
-cryptsetup close cryptroot
 
 qemu-nbd --disconnect /dev/nbd0
 qemu-nbd --disconnect /dev/nbd1
 qemu-nbd --disconnect /dev/nbd2
 qemu-nbd --disconnect /dev/nbd3
 qemu-nbd --disconnect /dev/nbd4
+HOST
+
+umount -R /mnt/*
+cryptsetup close cryptroot
 
 modprobe nbd
 
