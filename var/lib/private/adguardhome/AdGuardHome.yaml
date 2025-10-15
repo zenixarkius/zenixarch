@@ -196,7 +196,6 @@ filters:
     id: 1756073441
 whitelist_filters: []
 user_rules:
-  - '||firefox.settings.services.mozilla.com^$important'
   - '@@||amazontrust.com^$important'
   - '@@||cloudfront.net^$important'
   - '@@||ajax.googleapis.com^$important'
