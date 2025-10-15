@@ -9,9 +9,7 @@ set -euo pipefail
 read -rp $'\e[31mThis will wipe every little thing on your disk and reformat\n\e[31mAlso, you should know EVERYTHING this does before running it\n\e[31mType "IK" to continue: \e[0m' CONFIRM
 [[ "$CONFIRM" != "IK" ]] && echo -e "\e[31mYou didn't confirm you knew\e[0m" && exit 1
 
-umount -R /mnt || true
-umount -R /mnt/* || true
-cryptsetup close cryptroot || true
+umount -R /mnt || true && umount -R /mnt/* || true && cryptsetup close cryptroot || true
 
 nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
 
@@ -198,47 +196,43 @@ chown -R user:user /home/user
 mkinitcpio -p linux
 TEMPLATE
 
-arch-chroot /mnt/host bash -e << 'HOST'
-qemu-nbd --disconnect /dev/nbd0
+umount -R /mnt/template
 qemu-nbd --disconnect /dev/nbd1
 
+arch-chroot /mnt/host bash -e << 'HOST'
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/user.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/proxy.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/firewall.qcow2
 qemu-img create -f qcow2 -b /var/lib/libvirt/images/template.qcow2 -F qcow2 /var/lib/libvirt/images/network.qcow2
 
 qemu-nbd --connect=/dev/nbd2 /var/lib/libvirt/images/proxy.qcow2
-qemu-nbd --connect=/dev/nbd3 /var/lib/libvirt/images/firewall.qcow2
-qemu-nbd --connect=/dev/nbd4 /var/lib/libvirt/images/network.qcow2
-
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd3p2 /mnt
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd2p2 /mnt/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd2p2 /mnt/var/cache
 systemctl enable --root=/mnt adguardhome
 systemctl enable --root=/mnt/wireguard
 umount /mnt
+qemu-nbd --disconnect /dev/nbd2
 
+qemu-nbd --connect=/dev/nbd3 /var/lib/libvirt/images/firewall.qcow2
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd4p2 /mnt
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd3p2 /mnt/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd3p2 /mnt/var/cache
 systemctl enable --root=/mnt nftables
 umount /mnt
+qemu-nbd --disconnect /dev/nbd3
 
+qemu-nbd --connect=/dev/nbd4 /var/lib/libvirt/images/network.qcow2
 mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/nbd5p2 /mnt
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/nbd4p2 /mnt/var/log
 mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/nbd4p2 /mnt/var/cache
 systemctl enable --root=/mnt iwd
 systemctl enable --root=/mnt systemd-timesyncd
 umount /mnt
-
-qemu-nbd --disconnect /dev/nbd2
-qemu-nbd --disconnect /dev/nbd3
 qemu-nbd --disconnect /dev/nbd4
 HOST
 
-umount -R /mnt/*
-cryptsetup close cryptroot
-
+qemu-nbd --disconnect /dev/nbd0
 modprobe nbd
 
 echo -e "\e[32mDone!\e[0m"
