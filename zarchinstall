@@ -55,12 +55,12 @@ if [[ -d /run/archiso ]]; then
 
     umount -R /mnt &>/dev/null || true && umount -R /mnt/* &>/dev/null || true && cryptsetup close cryptroot &>/dev/null || true
 
-    nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
+    [[ "$DISK" =~ nvme ]] && nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
 
     sgdisk --zap-all "/dev/$DISK"
     sgdisk -g "/dev/$DISK"
-    sgdisk -n 1:0:+512M -t 1:ef00 -c 1:"EFI System" "/dev/$DISK"
-    sgdisk -n 2:0:0 -t 2:8300 -c 2:"Linux filesystem" "/dev/$DISK"
+    sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:"EFI System" "/dev/$DISK"
+    sgdisk -I -n 2:0:0 -t 2:8300 -c 2:"Linux filesystem" "/dev/$DISK"
 
     [[ "$DISK" =~ [0-9]$ ]] && DISK="${DISK}p"
 
