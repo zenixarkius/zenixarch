@@ -26,6 +26,6 @@ pipewire-jack
 pipewire-pulse
 sbctl
 slurp
-ttf-hack-nerd
+ttf-nerd-fonts-symbols
 wireguard-tools
 wl-clipboard
