@@ -21,18 +21,20 @@ dns:
   ratelimit_whitelist: []
   refuse_any: true
   upstream_dns:
+    - 10.64.0.1
+  upstream_dns_file: ""
+  bootstrap_dns:
+    - 10.64.0.1
+    - https://9.9.9.9/dns-query
+    - https://149.112.112.112/dns-query
+    - https://[2620:fe::11]/dns-query
+    - https://[2620:fe::fe:11]/dns-query
+  fallback_dns:
     - https://dns.quad9.net/dns-query
     - https://9.9.9.9/dns-query
     - https://149.112.112.112/dns-query
     - https://[2620:fe::11]/dns-query
     - https://[2620:fe::fe:11]/dns-query
-  upstream_dns_file: ""
-  bootstrap_dns:
-    - https://9.9.9.9/dns-query
-    - https://149.112.112.112/dns-query
-    - https://[2620:fe::11]/dns-query
-    - https://[2620:fe::fe:11]/dns-query
-  fallback_dns: []
   upstream_mode: parallel
   fastest_timeout: 1s
   allowed_clients:
