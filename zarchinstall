@@ -36,7 +36,7 @@ configuration() {
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user "$HOMEDIR"
 
-    mkinitcpio -p linux-cachyos
+    mkinitcpio -p linux-cachyos-bore-lto
 
     if sbctl status | grep -q "Setup Mode:.*Enabled"; then
         sbctl create-keys
