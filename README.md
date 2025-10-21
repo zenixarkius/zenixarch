@@ -1,25 +1,19 @@
 # Zenixark's Arch Linux Setup
-**My minimalist privacy, security, and performance focused Arch system fully reproducible with one command, inspired by NixOS and Ansible**
+**My minimalist privacy, security, and performance focused Arch system fully reproducible with one command**
 
-I didn't want to give up Arch, so I decided to make my REALLY ***REALLY*** opinionated install reproducible in `bash`. This is *not* intended to be reused by others as it assumes my hardware and philosophy.
+I didn't want to give up Arch but I liked the idea of NixOS and Ansible, so I decided to make my install reproducible with [`zarchinstall`](./zarchinstall), which can do a full disk install from a live ISO and be re-ran over and over post install to apply the repo's state. This is *not* intended to be reused by others as it assumes my hardware and philosophy, but you can fork and change it however you want for all I care.
 
-## Core Features
+This setup worships the almighty **KISS** principle as it naturally begets privacy through avoiding enshittification (I know... *herculean difficulty* for some people for some esoteric reason), and security as how does one attack that which has no bytes (or electromagnetic waves)?
 
-- An [idempotent installer](./zarchinstall) that can do a full disk install from a live ISO and be re-ran again post-install to apply any modifications.
-- The entire ESP is a `/boot/EFI/BOOT/BOOTX64.EFI` Unified Kernel Image that's directly booted by the EFI without any `systemd-boot` or `grub` overhead.
-- FDE + `btrfs` subvolumes optimized for I/O performance, security, and snapshots.
-- Custom Secure Boot keys using `sbctl` to sign the UKI to ensure that the initramfs has not been tampered with.
-- Minimalist alternatives such as `iwd` for Wi-Fi instead of `systemd-networkd` or `networkmanager` and `doas` instead of `sudo`.
-- Default-deny `nftables` rules including drop output, except for common ports.
-- Self-hosted DNS Sinkhole with `adguardhome` (only accessible to `127.0.0.1`) with a LOT of blocklists including GAFAM ones.
-- [WireGuard](./etc/systemd/system/wireguard.service), [NVIDIA overclocking](./etc/systemd/system/overclock.service)..., this is already getting too long... it might be better to just take a look around the repository.
+## Whats in here
+A ***lot***. Seriously... [cmdline](./etc/kernel/cmdline) and [sysctl](./etc/sysctl.d/99-hardening.conf) hardening, CachyOS' kernel and [repos](./etc/pacman.conf), hardcore [Nftables rules](./etc/nftables.conf), a [bootloader-less UKI](./etc/mkinitcpio.d/linux-cachyos-bore-lto.preset) setup, custom Secure Boot Keys, paranoia-grade FDE settings, optimized Btrfs subvolumes, NVIDIA [overclocking](./etc/systemd/system/overclock.service), dotfiles, [Adguard Home](./var/lib/private/adguardhome/AdGuardHome.yaml), [WireGuard](./etc/systemd/system/wireguard.service), extra [Librewolf hardening](./home/user/.librewolf/user/user.js)... I might just be hyping up uninteresting things, but ***I*** *FIND IT COOL*, so just take a look around if you care.
 
-## Usage
+## How do I use it
 
 > [!NOTE]
 > In a live ISO, `sbctl enroll-keys --tpm-eventlog` can't detect a TPM so Setup Mode should be enabled AFTER `reboot` BEFORE booting the fresh install, then do step 5. I personally have to use that flag or else I get no boot video and an un-accelerated framebuffer after boot as my GPU's GOP driver fails to init. Remove the flag or use `--microsoft` (*if you want to make Secure Boot useless...*) to set up everything in one run.
 
-A full installation is *technically* optional but `configuration()` assumes one was done, especially anything `btrfs` related such as `/etc/kernel/cmdline`. Otherwise, just `git clone` this repository into `~/.zenixarch` and skip to step 5. Note that `zarchinstall` will overwrite relevant configs with the ones in the repository without backing anything up, you have been warned.
+A full installation is *technically* optional but `configuration()` assumes one was done. If you're stupid enough to clone this repo and run it unchanged on an existing install, well your installation is in the hands of God now.
 
 *From a live Arch ISO:*
 ```cf
@@ -34,6 +28,6 @@ git clone https://zenixark.com/zenixark/zenixarch.git
 DISK=<e.g sda or nvme0n1> PASS=<a strong password> ./zenixarch/zarchinstall
 reboot
 
-## 4. After rebooting, this can be run repeatedly from the repository directory to apply new changes idempotently
-doas ./zarchinstall
+## 4. After rebooting, this can be run repeatedly to apply the repo's state idempotently
+doas ~/.zenixarch/zarchinstall
 ```
