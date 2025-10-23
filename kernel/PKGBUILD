@@ -1,12 +1,16 @@
+#!/bin/bash
 # Maintainer: zenixark <contact@zenixark.com>
 
 pkgbase=linux-zenixark
 pkgver=6.17.4.arch2
 pkgrel=1
 pkgdesc="Zenixark's attempt at a custom kernel"
+# shellcheck disable=SC2034
 url="https://zenixark.com/zenixark/zenixarch"
 arch=(x86_64)
+# shellcheck disable=SC2034
 options=(!strip !debug !lto)
+# shellcheck disable=SC2034
 makedepends=(
     bc
     clang
@@ -27,18 +31,19 @@ makedepends=(
 
 _srcname=linux-${pkgver%.*}
 _nv_ver=580.95.05
-source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.xz
-        https://github.com/archlinux/linux/releases/download/v${pkgver%.*}-${pkgver##*.}/linux-v${pkgver%.*}-${pkgver##*.}.patch.zst
-        https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nv_ver}/NVIDIA-Linux-x86_64-${_nv_ver}.run
+source=(https://cdn.kernel.org/pub/linux/kernel/v"${pkgver%%.*}".x/"${_srcname}".tar.xz
+        https://github.com/archlinux/linux/releases/download/v"${pkgver%.*}"-"${pkgver##*.}"/linux-v"${pkgver%.*}"-"${pkgver##*.}".patch.zst
+        https://us.download.nvidia.com/XFree86/Linux-x86_64/"${_nv_ver}"/NVIDIA-Linux-x86_64-"${_nv_ver}".run
         patches/0001-bore-cachy.patch
         config)
 
 export KBUILD_BUILD_HOST=zenixark
 export KBUILD_BUILD_USER=$pkgbase
-export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+export KBUILD_BUILD_TIMESTAMP="$KBUILD_BUILD_TIMESTAMP"
 
 prepare() {
-    cd $_srcname
+    cd "$_srcname" || exit
 
     echo "Setting version..."
     echo "-$pkgrel" > localversion.10-pkgrel
@@ -62,7 +67,7 @@ prepare() {
 }
 
 build() {
-    cd $_srcname
+    cd "$_srcname" || exit
     make all
     make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
 }
@@ -70,14 +75,18 @@ build() {
 _package() {
     pkgdesc="The $pkgdesc kernel and modules"
     depends=('coreutils' 'kmod' 'initramfs')
+    # shellcheck disable=SC2034
     optdepends=('linux-firmware: firmware images needed for some devices'
                 'scx-scheds: to use sched-ext schedulers'
                 'wireless-regdb: to set the correct wireless channels of your country')
+    # shellcheck disable=SC2034
     provides=(KSMBD-MODULE NTSYNC-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
 
-    cd $_srcname
+    cd "$_srcname" || exit
 
-    local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
+    # shellcheck disable=SC2154
+    modulesdir="$pkgdir/usr/lib/modules/$(<version)"
+    local modulesdir="$modulesdir"
 
     echo "Installing boot image..."
     # systemd expects to find the kernel here to allow hibernation
@@ -96,10 +105,12 @@ _package() {
 
 _package-headers() {
     pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
+    # shellcheck disable=SC2034
     depends=('pahole' "${pkgbase}")
 
-    cd $_srcname
-    local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
+    cd "$_srcname" || exit
+    builddir="$pkgdir/usr/lib/modules/$(<version)/build"
+    local builddir="$builddir"
 
     echo "Installing build files..."
     install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map localversion.* version vmlinux tools/bpf/bpftool/vmlinux.h
@@ -167,18 +178,18 @@ _package-headers() {
     while read -rd '' file; do
         case "$(file -Sib "$file")" in
             application/x-sharedlib\;*)      # Libraries (.so)
-                strip -v $STRIP_SHARED "$file" ;;
+                strip -v "$STRIP_SHARED" "$file" ;;
             application/x-archive\;*)        # Libraries (.a)
-                strip -v $STRIP_STATIC "$file" ;;
+                strip -v "$STRIP_STATIC" "$file" ;;
             application/x-executable\;*)     # Binaries
-                strip -v $STRIP_BINARIES "$file" ;;
+                strip -v "$STRIP_BINARIES" "$file" ;;
             application/x-pie-executable\;*) # Relocatable binaries
-                strip -v $STRIP_SHARED "$file" ;;
+                strip -v "$STRIP_SHARED" "$file" ;;
         esac
     done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
 
     echo "Stripping vmlinux..."
-    strip -v $STRIP_STATIC "$builddir/vmlinux"
+    strip -v "$STRIP_STATIC" "$builddir/vmlinux"
 
     echo "Adding symlink..."
     mkdir -p "$pkgdir/usr/src"
@@ -191,7 +202,7 @@ pkgname=(
 )
 for _p in "${pkgname[@]}"; do
     eval "package_$_p() {
-        $(declare -f "_package${_p#$pkgbase}")
-        _package${_p#$pkgbase}
+        $(declare -f "_package${_p#"$pkgbase"}")
+        _package${_p#"$pkgbase"}
     }"
 done
