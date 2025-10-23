@@ -8,10 +8,6 @@ ExecStart=/bin/bash -c '\
 if wg show; then wg-quick down wg0; fi; \
 ln -sf "$(find /etc/wireguard/configs -maxdepth 1 -name '*.conf' -print | shuf -n 1)" /etc/wireguard/wg0.conf; \
 wg-quick up wg0; \
-if ! nft list ruleset | grep "wg0.*0xca6c"; then \
-    nft insert rule inet filter output oifname != "wg0" meta mark != 0xca6c ip daddr != 127.0.0.0/8 reject; \
-    nft insert rule inet filter output oifname != "wg0" meta mark != 0xca6c ip6 daddr != ::1 reject; \
-fi; \
 '
 
 [Install]
