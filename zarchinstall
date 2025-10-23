@@ -5,36 +5,38 @@ SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
 configuration() {
-    mapfile -t files < <(find "$SCRIPTDIR"/configs -type f)
-    for src in "${files[@]}"; do
-        cmp -s "$src" "/${src#"$SCRIPTDIR"/configs/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/configs/}"
+    find "$SCRIPTDIR"/configs -type f | while read -r src; do
+        if [[ "$src" =~ adguardhome.yaml ]]; then
+            cmp -s "$src" /var/lib/private/adguardhome/AdGuardHome.yaml || install -Dm600 -o nobody -g nobody "$src" /var/lib/private/adguardhome/AdGuardHome.yaml
+        else
+            cmp -s "$src" /etc/"${src#"$SCRIPTDIR"/configs/}" || install -Dm644 "$src" /etc/"${src#"$SCRIPTDIR"/configs/}"
+        fi
     done
 
-    sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|g" /etc/kernel/cmdline
+    find "$SCRIPTDIR"/dotfiles -type f | while read -r src; do
+        cmp -s "$src" /home/user/"${src#"$SCRIPTDIR"/dotfiles/}" || install -Dm644 "$src" /home/user/"${src#"$SCRIPTDIR"/dotfiles/}"
+    done
+
+    sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/kernel/cmdline
+
+    chmod 600 /etc/doas.conf
 
     pacman -Syu --needed - < "$SCRIPTDIR"/packages.txt
 
-    mapfile -t services < "$SCRIPTDIR"/services.txt
-    for svc in "${services[@]}"; do
-        systemctl enable $NOW "$svc"
-    done
-
+    while read -r svc; do systemctl enable $NOW "$svc"; done < "$SCRIPTDIR"/services.txt
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        [[ "${services[*]}" =~ $svc ]] || systemctl disable $NOW "$svc"
+        grep -qx "$svc" "$SCRIPTDIR"/services.txt || systemctl disable $NOW "$svc"
     done
 
     systemctl enable {fstrim,btrfs-scrub@-}.timer
-
     systemctl mask systemd-boot-random-seed.service
 
     for ex in "$SCRIPTDIR"/extras/*; do "$ex"; done
 
-    ln -sfn /tmp "$HOMEDIR"/.cache
-    ln -sfn /tmp "$HOMEDIR"/.local
+    ln -sfn /tmp /home/user/.cache
+    ln -sfn /tmp /home/user/.local
 
-    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
-    chown -R nobody:nobody /var/lib/private/adguardhome
-    chown -R user:user "$HOMEDIR"
+    chown -R user:user /home/user
 
     mkinitcpio -p linux-cachyos-bore-lto
 
@@ -90,7 +92,6 @@ if [[ -d /run/archiso ]]; then
 
     reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
     sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
-    pacman -Sy --noconfirm archlinux-keyring
 
     curl https://mirror.cachyos.org/cachyos-repo.tar.xz > cachyos-repo.tar.xz
     tar xvf cachyos-repo.tar.xz
@@ -107,7 +108,7 @@ if [[ -d /run/archiso ]]; then
     cp -r "$SCRIPTDIR" /mnt/.zenixarch/
 
     arch-chroot /mnt bash -e << CHROOT
-    export NOW="" SCRIPTDIR="/home/user/.zenixarch" HOMEDIR="/home/user"
+    export NOW="" SCRIPTDIR="/home/user/.zenixarch"
     $(declare -f configuration)
 
     ln -sf "/usr/share/zoneinfo/America/New_York" /etc/localtime
@@ -120,14 +121,13 @@ if [[ -d /run/archiso ]]; then
     chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
     passwd --lock root
 
-    mv /.zenixarch "\$HOMEDIR"
+    mv /.zenixarch /home/user
 
     configuration
 CHROOT
 
 else
-    HOMEDIR="$(getent passwd 1000 | cut -d: -f6)"
-    export NOW="--now" SCRIPTDIR="$SCRIPTDIR" HOMEDIR="$HOMEDIR"
+    export NOW="--now" SCRIPTDIR="$SCRIPTDIR"
     configuration
 fi
 
