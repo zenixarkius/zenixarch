@@ -2,7 +2,6 @@
 
 pkgbase=linux-zenixark
 pkgver=6.17.5
-_archpkgver=${pkgver}.arch1
 pkgrel=1
 pkgdesc="Zenixark"
 url="https://zenixark.com/zenixark/zenixarch"
@@ -13,8 +12,8 @@ options=(!debug !strip !lto)
 _srcname=linux-${pkgver}
 _nv_ver=580.95.05
 source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.xz
-        https://github.com/archlinux/linux/releases/download/v${_archpkgver%.*}-${_archpkgver##*.}/linux-v${_archpkgver%.*}-${_archpkgver##*.}.patch.zst
-        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore.patch
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/all/0001-cachyos-base-all.patch
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore-cachy.patch
         https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nv_ver}/NVIDIA-Linux-x86_64-${_nv_ver}.run
         config)
 
@@ -68,7 +67,6 @@ package() {
                 'scx-scheds: to use sched-ext schedulers'
                 'wireless-regdb: to set the correct wireless channels of your country')
     provides=(KSMBD-MODULE NTSYNC-MODULE NVIDIA-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
-    replaces=(virtualbox-guest-modules-arch wireguard-arch)
 
     cd $_srcname
 
