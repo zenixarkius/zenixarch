@@ -1,33 +1,29 @@
-#!/bin/bash
 # Maintainer: zenixark <contact@zenixark.com>
 
 pkgbase=linux-zenixark
-pkgver=6.17.4
-_archpkgver=${pkgver}.arch2
+pkgver=6.17.5
+_archpkgver=${pkgver}.arch1
 pkgrel=1
-pkgdesc="Zenixark's attempt at a custom kernel"
-# shellcheck disable=SC2034
+pkgdesc="Zenixark"
 url="https://zenixark.com/zenixark/zenixarch"
 arch=(x86_64)
-# shellcheck disable=SC2034
-options=(!strip !debug !lto)
-# shellcheck disable=SC2034
-makedepends=(bc clang cpio gettext libelf lld llvm pahole perl python rust rust-bindgen rust-src tar xz zstd)
+makedepends=(bc clang cpio gettext libelf lld llvm pahole perl python rust rust-bindgen rust-src tar xz)
+options=(!debug !strip !lto)
 
 _srcname=linux-${pkgver}
 _nv_ver=580.95.05
-source=(https://cdn.kernel.org/pub/linux/kernel/v"${pkgver%%.*}".x/"${_srcname}".tar.xz
-        https://github.com/archlinux/linux/releases/download/v"${_archpkgver%.*}"-"${_archpkgver##*.}"/linux-v"${_archpkgver%.*}"-"${_archpkgver##*.}".patch.zst
-        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore.patch
-        https://us.download.nvidia.com/XFree86/Linux-x86_64/"${_nv_ver}"/NVIDIA-Linux-x86_64-"${_nv_ver}".run
+source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.xz
+        https://github.com/archlinux/linux/releases/download/v${_archpkgver%.*}-${_archpkgver##*.}/linux-v${_archpkgver%.*}-${_archpkgver##*.}.patch.zst
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore.patch
+        https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nv_ver}/NVIDIA-Linux-x86_64-${_nv_ver}.run
         config)
 
 export KBUILD_BUILD_HOST=zenixark
 export KBUILD_BUILD_USER=$pkgbase
-KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})" && export KBUILD_BUILD_TIMESTAMP="$KBUILD_BUILD_TIMESTAMP"
+export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
 
 prepare() {
-    cd "$_srcname" || exit
+    cd $_srcname
 
     echo "Setting version..."
     echo "-$pkgrel" > localversion.10-pkgrel
@@ -51,35 +47,32 @@ prepare() {
     make -s kernelrelease > version
     echo "Prepared $pkgbase version $(<version)"
 
-    # shellcheck disable=SC2154
-    cd "${srcdir}" || exit
+    cd $srcdir
     sh NVIDIA-Linux-x86_64-"${_nv_ver}".run --extract-only
-    cd "$_srcname" || exit
+    cd $_srcname
     mkdir -p drivers/nvidia
     cp -r "${srcdir}/NVIDIA-Linux-x86_64-${_nv_ver}"/kernel/* drivers/nvidia/
     echo "obj-y += nvidia/" >> drivers/Makefile
 }
 
 build() {
-    cd "$_srcname" || exit
+    cd $_srcname
     make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 -j"$(nproc)" all
     make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
 }
 
 _package() {
-    pkgdesc="$pkgdesc and modules"
-    depends=(coreutils kmod initramfs nvidia-utils="${_nv_ver}" libglvnd)
-    # shellcheck disable=SC2034
+    pkgdesc="The $pkgdesc kernel and modules"
+    depends=(coreutils kmod initramfs nvidia-utils=${_nv_ver} libglvnd)
     optdepends=('linux-firmware: firmware images needed for some devices'
                 'scx-scheds: to use sched-ext schedulers'
                 'wireless-regdb: to set the correct wireless channels of your country')
-    # shellcheck disable=SC2034
     provides=(KSMBD-MODULE NTSYNC-MODULE NVIDIA-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
+    replaces=(virtualbox-guest-modules-arch wireguard-arch)
 
-    cd "$_srcname" || exit
+    cd $_srcname
 
-    # shellcheck disable=SC2154
-    modulesdir="$pkgdir/usr/lib/modules/$(<version)" && local modulesdir="$modulesdir"
+    local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
 
     echo "Installing boot image..."
     # systemd expects to find the kernel here to allow hibernation
@@ -90,22 +83,23 @@ _package() {
     echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
     echo "Installing modules..."
-    ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
+    ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
+        DEPMOD=/doesnt/exist modules_install  # Suppress depmod
 
-    # remove build links
+    # remove build link
     rm "$modulesdir"/build
 }
 
 _package-headers() {
-    pkgdesc="Headers and scripts for building modules for $pkgdesc"
-    # shellcheck disable=SC2034
+    pkgdesc="Headers and scripts for building modules for the $pkgdesc kernel"
     depends=('pahole' "${pkgbase}")
 
-    cd "$_srcname" || exit
-    builddir="$pkgdir/usr/lib/modules/$(<version)/build" && local builddir="$builddir"
+    cd $_srcname
+    local builddir="$pkgdir/usr/lib/modules/$(<version)/build"
 
     echo "Installing build files..."
-    install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map localversion.* version vmlinux tools/bpf/bpftool/vmlinux.h
+    install -Dt "$builddir" -m644 .config Makefile Module.symvers System.map \
+        localversion.* version vmlinux tools/bpf/bpftool/vmlinux.h
     install -Dt "$builddir/kernel" -m644 kernel/Makefile
     install -Dt "$builddir/arch/x86" -m644 arch/x86/Makefile
     cp -t "$builddir" -a scripts
@@ -115,9 +109,7 @@ _package-headers() {
     install -Dt "$builddir/tools/objtool" tools/objtool/objtool
 
     # required when DEBUG_INFO_BTF_MODULES is enabled
-    if [ -f tools/bpf/resolve_btfids/resolve_btfids ]; then
-        install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
-    fi
+    [ -f tools/bpf/resolve_btfids/resolve_btfids ] && install -Dt "$builddir/tools/bpf/resolve_btfids" tools/bpf/resolve_btfids/resolve_btfids
 
     echo "Installing headers..."
     cp -t "$builddir" -a include
@@ -141,12 +133,13 @@ _package-headers() {
     echo "Installing KConfig files..."
     find . -name 'Kconfig*' -exec install -Dm644 {} "$builddir/{}" \;
 
-    echo "Installing Rust files if they exist..."
+    echo "Installing Rust files..."
     compgen -G "rust/*.rmeta" 1>/dev/null && install -Dt "$builddir/rust" -m644 rust/*.rmeta
     compgen -G "rust/*.so" 1>/dev/null && install -Dt "$builddir/rust" rust/*.so
 
     echo "Installing unstripped VDSO..."
-    make INSTALL_MOD_PATH="$pkgdir/usr" vdso_install link=  # Suppress build-id symlinks
+    make INSTALL_MOD_PATH="$pkgdir/usr" vdso_install \
+        link=  # Suppress build-id symlinks
 
     echo "Removing unneeded architectures..."
     local arch
@@ -170,18 +163,18 @@ _package-headers() {
     while read -rd '' file; do
         case "$(file -Sib "$file")" in
             application/x-sharedlib\;*)      # Libraries (.so)
-                strip -v "$STRIP_SHARED" "$file" ;;
+                strip -v $STRIP_SHARED "$file" ;;
             application/x-archive\;*)        # Libraries (.a)
-                strip -v "$STRIP_STATIC" "$file" ;;
+                strip -v $STRIP_STATIC "$file" ;;
             application/x-executable\;*)     # Binaries
-                strip -v "$STRIP_BINARIES" "$file" ;;
+                strip -v $STRIP_BINARIES "$file" ;;
             application/x-pie-executable\;*) # Relocatable binaries
-                strip -v "$STRIP_SHARED" "$file" ;;
+                strip -v $STRIP_SHARED "$file" ;;
         esac
     done < <(find "$builddir" -type f -perm -u+x ! -name vmlinux -print0)
 
     echo "Stripping vmlinux..."
-    strip -v "$STRIP_STATIC" "$builddir/vmlinux"
+    strip -v $STRIP_STATIC "$builddir/vmlinux"
 
     echo "Adding symlink..."
     mkdir -p "$pkgdir/usr/src"
@@ -194,7 +187,7 @@ pkgname=(
 )
 for _p in "${pkgname[@]}"; do
     eval "package_$_p() {
-        $(declare -f "_package${_p#"$pkgbase"}")
-        _package${_p#"$pkgbase"}
+        $(declare -f "_package${_p#$pkgbase}")
+        _package${_p#$pkgbase}
     }"
 done
