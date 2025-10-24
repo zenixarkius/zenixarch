@@ -5,37 +5,29 @@ SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
 configuration() {
-    find "$SCRIPTDIR"/configs -type f | while read -r src; do
-        if [[ "$src" =~ adguardhome.yaml ]]; then
-            cmp -s "$src" /var/lib/private/adguardhome/AdGuardHome.yaml || install -Dm600 -o nobody -g nobody "$src" /var/lib/private/adguardhome/AdGuardHome.yaml
-        else
-            cmp -s "$src" /etc/"${src#"$SCRIPTDIR"/configs/}" || install -Dm644 "$src" /etc/"${src#"$SCRIPTDIR"/configs/}"
-        fi
-    done
-
-    find "$SCRIPTDIR"/dotfiles -type f | while read -r src; do
-        cmp -s "$src" /home/user/"${src#"$SCRIPTDIR"/dotfiles/}" || install -Dm644 "$src" /home/user/"${src#"$SCRIPTDIR"/dotfiles/}"
+    find "$SCRIPTDIR"/{etc,home,var} -type f | while read -r src; do
+        cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/}"
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/kernel/cmdline
 
-    chmod 600 /etc/doas.conf
+    pacman -Syu --needed - < "$SCRIPTDIR"/zarch/packages.txt
 
-    pacman -Syu --needed - < "$SCRIPTDIR"/packages.txt
-
-    while read -r svc; do systemctl enable $NOW "$svc"; done < "$SCRIPTDIR"/services.txt
+    while read -r svc; do systemctl enable $NOW "$svc"; done < "$SCRIPTDIR"/zarch/services.txt
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        grep -qx "$svc" "$SCRIPTDIR"/services.txt || systemctl disable $NOW "$svc"
+        grep -qx "$svc" "$SCRIPTDIR"/zarch/services.txt || systemctl disable $NOW "$svc"
     done
 
     systemctl enable {fstrim,btrfs-scrub@-}.timer
     systemctl mask systemd-boot-random-seed.service
 
-    for ex in "$SCRIPTDIR"/extras/*; do "$ex"; done
+    for ex in "$SCRIPTDIR"/zarch/extras/*; do "$ex"; done
 
     ln -sfn /tmp /home/user/.cache
     ln -sfn /tmp /home/user/.local
 
+    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
+    chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
 
     mkinitcpio -p linux-cachyos-bore-lto
@@ -97,7 +89,7 @@ if [[ -d /run/archiso ]]; then
     tar xvf cachyos-repo.tar.xz
     (cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt - < "$SCRIPTDIR"/packages.txt
+    pacstrap /mnt - < "$SCRIPTDIR"/zarch/packages.txt
 
     mv /mnt/boot/vmlinuz-linux /mnt/usr/lib/modules/vmlinuz
     rm -rf /mnt/boot/*
