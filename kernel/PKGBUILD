@@ -16,7 +16,7 @@ source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar
         https://github.com/archlinux/linux/releases/download/v${_archpkgver%.*}-${_archpkgver##*.}/linux-v${_archpkgver%.*}-${_archpkgver##*.}.patch.zst
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore.patch
         https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nv_ver}/NVIDIA-Linux-x86_64-${_nv_ver}.run
-        config)
+        https://gitlab.archlinux.org/archlinux/packaging/packages/linux/-/raw/main/config)
 
 export KBUILD_BUILD_HOST=zenixark
 export KBUILD_BUILD_USER=$pkgbase
