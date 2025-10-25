@@ -99,6 +99,10 @@ if [[ -d /run/archiso ]]; then
 
     cp -r "$SCRIPTDIR" /mnt/.zenixarch/
 
+    echo "zenixark" > /mnt/etc/hostname
+    echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
+    echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen
+
     arch-chroot /mnt bash -e << CHROOT
     export NOW="" SCRIPTDIR="/home/user/.zenixarch"
     $(declare -f configuration)
@@ -106,7 +110,6 @@ if [[ -d /run/archiso ]]; then
     ln -sf "/usr/share/zoneinfo/America/New_York" /etc/localtime
     hwclock --systohc
 
-    sed -i 's/^#\(en_US.UTF-8 UTF-8\)/\1/' /etc/locale.gen
     locale-gen
 
     useradd -m user
