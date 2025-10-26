@@ -141,10 +141,6 @@ filters:
     name: No Apple
     id: 1756073427
   - enabled: true
-    url: https://raw.githubusercontent.com/badmojr/1Hosts/refs/heads/master/Pro/adblock.txt
-    name: 1Hosts Pro
-    id: 1756073428
-  - enabled: true
     url: https://easylist.to/easylist/easylist.txt
     name: EasyList
     id: 1756073429
@@ -196,6 +192,10 @@ filters:
     url: https://energized.pro/ultimate/adblock.txt
     name: Energized Ultimate
     id: 1756073441
+  - enabled: true
+    url: https://raw.githubusercontent.com/badmojr/1Hosts/refs/heads/master/Xtra/adblock.txt
+    name: 1Hosts Xtra
+    id: 1761486666
 whitelist_filters: []
 user_rules:
   - '@@||amazontrust.com^$important'
@@ -224,125 +224,7 @@ filtering:
   blocked_services:
     schedule:
       time_zone: Local
-    ids:
-      - 4chan
-      - 500px
-      - 9gag
-      - activision_blizzard
-      - aliexpress
-      - amazon
-      - amazon_streaming
-      - amino
-      - apple_streaming
-      - battle_net
-      - betano
-      - betfair
-      - betway
-      - bigo_live
-      - bilibili
-      - blaze
-      - blizzard_entertainment
-      - bluesky
-      - box
-      - canais_globo
-      - claro
-      - claude
-      - clubhouse
-      - coolapk
-      - crunchyroll
-      - dailymotion
-      - deepseek
-      - deezer
-      - directvgo
-      - discoveryplus
-      - disneyplus
-      - douban
-      - dropbox
-      - ebay
-      - electronic_arts
-      - epic_games
-      - espn
-      - facebook
-      - fifa
-      - flickr
-      - globoplay
-      - gog
-      - hbomax
-      - hulu
-      - icloud_private_relay
-      - iheartradio
-      - imgur
-      - instagram
-      - iqiyi
-      - kakaotalk
-      - kik
-      - kook
-      - lazada
-      - leagueoflegends
-      - line
-      - linkedin
-      - lionsgateplus
-      - looke
-      - mail_ru
-      - mastodon
-      - mercado_libre
-      - minecraft
-      - nebula
-      - netflix
-      - nintendo
-      - nvidia
-      - odysee
-      - ok
-      - olvid
-      - onlyfans
-      - origin
-      - paramountplus
-      - peacock_tv
-      - pinterest
-      - playstation
-      - plenty_of_fish
-      - plex
-      - pluto_tv
-      - privacy
-      - qq
-      - rakuten_viki
-      - riot_games
-      - roblox
-      - rockstar_games
-      - samsung_tv_plus
-      - shein
-      - shopee
-      - skype
-      - slack
-      - snapchat
-      - soundcloud
-      - spotify
-      - spotify_video
-      - telegram
-      - temu
-      - tidal
-      - tiktok
-      - tinder
-      - tumblr
-      - twitch
-      - twitter
-      - ubisoft
-      - valorant
-      - viber
-      - vimeo
-      - vk
-      - voot
-      - wechat
-      - weibo
-      - whatsapp
-      - wizz
-      - xboxlive
-      - xiaohongshu
-      - youtube
-      - yy
-      - zhihu
-      - wargaming
-      - discord
+    ids: []
   protection_disabled_until: null
   safe_search:
     enabled: false
@@ -366,6 +248,7 @@ filtering:
   filters_update_interval: 12
   blocked_response_ttl: 10
   filtering_enabled: true
+  rewrites_enabled: true
   parental_enabled: false
   safebrowsing_enabled: false
   protection_enabled: true
@@ -390,4 +273,4 @@ os:
   group: ""
   user: ""
   rlimit_nofile: 0
-schema_version: 30
+schema_version: 31
