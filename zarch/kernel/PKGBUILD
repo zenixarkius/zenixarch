@@ -1,12 +1,13 @@
 # Maintainer: zenixark <contact@zenixark.com>
 
-pkgbase=linux-zenixark
+pkgname=linux-zenixark
+pkgbase=$pkgname
 pkgver=6.17.5
 pkgrel=1
 pkgdesc="Zenixark"
 url="https://zenixark.com/zenixark/zenixarch"
 arch=(x86_64)
-makedepends=(bc clang cpio gettext libelf lld llvm pahole perl python rust rust-bindgen rust-src tar xz)
+makedepends=(bc llvm pahole python rust-bindgen rust-src)
 options=(!debug !strip !lto)
 
 _srcname=linux-${pkgver}
@@ -20,6 +21,8 @@ source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar
 export KBUILD_BUILD_HOST=zenixark
 export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+
+FLAGS=(CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1)
 
 prepare() {
     cd $_srcname
@@ -40,15 +43,14 @@ prepare() {
 
     echo "Setting config..."
     cp ../config .config
-    make olddefconfig
+    make "${FLAGS[@]}" olddefconfig
     diff -u ../config .config || :
 
     make -s kernelrelease > version
     echo "Prepared $pkgbase version $(<version)"
 
-    cd $srcdir
-    sh NVIDIA-Linux-x86_64-"${_nv_ver}".run --extract-only
-    cd $_srcname
+    echo "Preparing NVIDIA modules in tree..."
+    (cd $srcdir && sh NVIDIA-Linux-x86_64-"${_nv_ver}".run --extract-only)
     mkdir -p drivers/nvidia
     cp -r "${srcdir}/NVIDIA-Linux-x86_64-${_nv_ver}"/kernel/* drivers/nvidia/
     echo "obj-y += nvidia/" >> drivers/Makefile
@@ -56,17 +58,14 @@ prepare() {
 
 build() {
     cd $_srcname
-    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 -j"$(nproc)" all
-    make -C tools/bpf/bpftool vmlinux.h feature-clang-bpf-co-re=1
+    make "${FLAGS[@]}" -j"$(nproc)" all
 }
 
 package() {
-    pkgdesc="The $pkgdesc kernel and modules"
-    depends=(coreutils kmod initramfs nvidia-utils=${_nv_ver} libglvnd)
-    optdepends=('linux-firmware: firmware images needed for some devices'
-                'scx-scheds: to use sched-ext schedulers'
-                'wireless-regdb: to set the correct wireless channels of your country')
-    provides=(KSMBD-MODULE NTSYNC-MODULE NVIDIA-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
+    pkgdesc="The $pkgdesc kernel"
+    depends=(coreutils initramfs nvidia-utils=${_nv_ver} libglvnd)
+    optdepends=('linux-firmware: firmware images needed for some devices')
+    provides=(NTSYNC-MODULE NVIDIA-MODULE WIREGUARD-MODULE)
 
     cd $_srcname
 
@@ -75,15 +74,8 @@ package() {
     echo "Installing boot image..."
     # systemd expects to find the kernel here to allow hibernation
     # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
-    install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
+    install -Dm644 "$(make "${FLAGS[@]}" -s image_name)" "$modulesdir/vmlinuz"
 
     # Used by mkinitcpio to name the kernel
     echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
-
-    echo "Installing modules..."
-    ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
-        DEPMOD=/doesnt/exist modules_install  # Suppress depmod
-
-    # remove build link
-    rm "$modulesdir"/build
 }
