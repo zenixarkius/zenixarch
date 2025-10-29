@@ -13,7 +13,7 @@ configuration() {
 
     pacman -Syu --needed - < "$SCRIPTDIR"/zarch/packages.txt
 
-    while read -r svc; do systemctl enable $NOW "$svc"; done < "$SCRIPTDIR"/zarch/services.txt
+    while read -r svc; do systemctl enable $NOW "$svc" || true; done < "$SCRIPTDIR"/zarch/services.txt
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
         grep -qx "$svc" "$SCRIPTDIR"/zarch/services.txt || systemctl disable $NOW "$svc"
     done

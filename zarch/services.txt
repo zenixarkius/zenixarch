@@ -1,5 +1,6 @@
 adguardhome.service
 getty@.service
+hyprland.service
 iwd.service
 nftables.service
 overclock.service
