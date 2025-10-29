@@ -1,8 +1,8 @@
 adguardhome.service
-getty@.service
 hyprland.service
 iwd.service
 nftables.service
 overclock.service
+seatd.service
 systemd-timesyncd.service
 wireguard.service

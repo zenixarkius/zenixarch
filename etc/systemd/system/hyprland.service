@@ -1,18 +1,23 @@
 [Unit]
-Description=Autostart hyprland
-After=systemd-user-sessions.service user-runtime-dir@1000.service
-Requires=user-runtime-dir@1000.service
-Wants=graphical.target
+Description=Autostart Hyprland
+After=systemd-user-sessions.service seatd.service
+Requires=seatd.service
 RefuseManualStart=yes
 RefuseManualStop=yes
 
 [Service]
 User=user
 Environment=XDG_RUNTIME_DIR=/run/user/1000
+Environment=WAYLAND_DISPLAY=wayland-1
+PAMName=login
 WorkingDirectory=/home/user
-ExecStart=/usr/bin/hyprland
-Restart=on-failure
+ExecStartPre=/usr/bin/mkdir -p /run/user/1000
+ExecStart=/usr/bin/Hyprland
+Restart=always
 RestartSec=2
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=graphical.target
