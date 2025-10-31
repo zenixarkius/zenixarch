@@ -16,7 +16,6 @@ iwd
 librewolf-bin
 linux-cachyos-bore-lto-nvidia
 linux-firmware-intel
-linux-firmware-realtek
 neovim
 noto-fonts
 opendoas
