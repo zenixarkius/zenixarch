@@ -6,7 +6,7 @@ I didn't want to give up Arch but I liked the idea of NixOS and Ansible, so I de
 This setup worships the almighty **KISS** principle as it naturally begets privacy through avoiding enshittification (I know... *herculean difficulty* for some people for some esoteric reason), and security as how does one attack that which has no bytes (or electromagnetic waves)?
 
 ## Whats in here
-A ***lot***. Seriously... [cmdline](./etc/kernel/cmdline) and [sysctl](./etc/sysctl.d/99-hardening.conf) hardening, CachyOS' kernel and [repos](./etc/pacman.conf), hardcore [Nftables rules](./etc/nftables.conf), a [bootloader-less UKI](./etc/mkinitcpio.d/linux-cachyos-bore-lto.preset) setup, custom Secure Boot Keys, paranoia-grade FDE settings, optimized Btrfs subvolumes, NVIDIA [overclocking](./etc/systemd/system/overclock.service), dotfiles, [Adguard Home](./etc/adguardhome.yaml), [WireGuard](./etc/systemd/system/wireguard.service), extra [Librewolf hardening](./home/user/.librewolf/user/user.js)... I might just be hyping up uninteresting things, but ***I*** *FIND IT COOL*, so just take a look around if you care.
+A ***lot***. Seriously... In fact it's changing so rapidly that I can't be assed to update this section every time I bring in something new so I will update this later.
 
 ## How do I use it
 

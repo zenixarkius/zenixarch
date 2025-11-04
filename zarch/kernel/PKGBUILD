@@ -1,28 +1,33 @@
-# Maintainer: zenixark <contact@zenixark.com>
-
+pkgrel=1
+pkgver=6.17.7
+nv_ver=580.95.05
+_srcname=linux-$pkgver
 pkgname=linux-zenixark
 pkgbase=$pkgname
-pkgver=6.17.5
-pkgrel=1
-pkgdesc="Zenixark"
-url="https://zenixark.com/zenixark/zenixarch"
+pkgdesc="Zenixark's attempt at a custom kernel + NVIDIA drivers v$nv_ver"
+url=https://zenixark.com/zenixark/zenixarch
 arch=(x86_64)
-makedepends=(bc llvm pahole python rust-bindgen rust-src)
-options=(!debug !strip !lto)
+makedepends=(bc clang cpio lld llvm pahole perl python)
 
-_srcname=linux-${pkgver}
-_nv_ver=580.95.05
-source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/${_srcname}.tar.xz
+source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/$_srcname.tar.xz
+        https://us.download.nvidia.com/XFree86/Linux-x86_64/$nv_ver/NVIDIA-Linux-x86_64-$nv_ver.run
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/all/0001-cachyos-base-all.patch
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore-cachy.patch
-        https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nv_ver}/NVIDIA-Linux-x86_64-${_nv_ver}.run
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
         config)
 
+sha256sums=('ddf2ea0d4439e1d57136be3623102af9458f601f5b1cb77e83246e88aea09d0e'
+            '849ef0ef8e842b9806b2cde9f11c1303d54f1a9a769467e4e5d961b2fe1182a7'
+            'f8d705562484af7581dbf1a1c5768474ab95f53747bd79cee5cbd72d9eea5d1b'
+            '5b4eaf36b22c383bdbed2887f8bc7047b9e66c3bb3477b24323bdafe88236310'
+            '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
+            'd8f14cf8f0b3bbcdcc6c372bbb48171db0bad02bc55ab4b58e48ad2078995afe')
+
+FLAGS=(CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1)
+export MAKEFLAGS="-j$(nproc)"
 export KBUILD_BUILD_HOST=zenixark
 export KBUILD_BUILD_USER=$pkgbase
 export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
-
-FLAGS=(CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1)
 
 prepare() {
     cd $_srcname
@@ -33,6 +38,7 @@ prepare() {
 
     local src
     for src in "${source[@]}"; do
+        [[ $src = *nvidia* ]] && continue
         src="${src%%::*}"
         src="${src##*/}"
         src="${src%.zst}"
@@ -44,38 +50,44 @@ prepare() {
     echo "Setting config..."
     cp ../config .config
     make "${FLAGS[@]}" olddefconfig
-    diff -u ../config .config || :
+    diff --color=always ../config .config
 
     make -s kernelrelease > version
     echo "Prepared $pkgbase version $(<version)"
 
-    echo "Preparing NVIDIA modules in tree..."
-    (cd $srcdir && sh NVIDIA-Linux-x86_64-"${_nv_ver}".run --extract-only)
-    mkdir -p drivers/nvidia
-    cp -r "${srcdir}/NVIDIA-Linux-x86_64-${_nv_ver}"/kernel/* drivers/nvidia/
-    echo "obj-y += nvidia/" >> drivers/Makefile
+    echo "Unpacking NVIDIA drivers..."
+    cd $srcdir
+    sh NVIDIA-Linux-x86_64-$nv_ver.run --extract-only
+    patch -Np1 -i $srcdir/0001-Enable-atomic-kernel-modesetting-by-default.patch -d NVIDIA-Linux-x86_64-$nv_ver/kernel
 }
 
 build() {
     cd $_srcname
-    make "${FLAGS[@]}" -j"$(nproc)" all
+    make "${FLAGS[@]}" all
+
+    cd $srcdir/NVIDIA-Linux-x86_64-$nv_ver/kernel
+    make "${FLAGS[@]}" KERNEL_UNAME=$pkgver-${pkgbase#linux-} SYSSRC=$srcdir/$_srcname SYSOUT=$srcdir/$_srcname NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES modules
 }
 
 package() {
-    pkgdesc="The $pkgdesc kernel"
-    depends=(coreutils initramfs nvidia-utils=${_nv_ver} libglvnd)
-    optdepends=('linux-firmware: firmware images needed for some devices')
+    depends=(coreutils kmod initramfs nvidia-utils=$nv_ver libglvnd)
     provides=(NTSYNC-MODULE NVIDIA-MODULE WIREGUARD-MODULE)
 
     cd $_srcname
-
     local modulesdir="$pkgdir/usr/lib/modules/$(<version)"
 
     echo "Installing boot image..."
-    # systemd expects to find the kernel here to allow hibernation
-    # https://github.com/systemd/systemd/commit/edda44605f06a41fb86b7ab8128dcf99161d2344
-    install -Dm644 "$(make "${FLAGS[@]}" -s image_name)" "$modulesdir/vmlinuz"
-
-    # Used by mkinitcpio to name the kernel
+    install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
     echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
+
+    echo "Installing NVIDIA drivers..."
+    (cd $srcdir/NVIDIA-Linux-x86_64-$nv_ver
+    install -dm755 $modulesdir
+    install -m644 kernel/*.ko $modulesdir
+    install -Dt $pkgdir/usr/share/licenses/$pkgname -m644 LICENSE)
+    find $modulesdir -type f -name '*.ko' -print -exec scripts/sign-file sha512 certs/signing_key.pem certs/signing_key.x509 {} \;
+    find $pkgdir -name '*.ko' -exec zstd --rm -19 -T0 {} +
+
+    echo "Installing modules..."
+    ZSTD_CLEVEL=19 make "${BUILD_FLAGS[@]}" INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist  modules_install
 }

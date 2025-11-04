@@ -14,7 +14,6 @@ intel-ucode
 iptables-nft
 iwd
 librewolf-bin
-linux-cachyos-bore-lto-nvidia
 linux-firmware-intel
 neovim
 noto-fonts

@@ -9,7 +9,7 @@ configuration() {
         cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/}"
     done
 
-    sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/kernel/cmdline
+    sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
 
     pacman -Syu --needed - < "$SCRIPTDIR"/zarch/packages.txt
 
@@ -30,7 +30,7 @@ configuration() {
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
 
-    mkinitcpio -p linux-cachyos-bore-lto
+    mkinitcpio -p linux-zenixark || true
 
     if sbctl status | grep -q "Setup Mode:.*Enabled"; then
         sbctl create-keys
@@ -91,15 +91,10 @@ if [[ -d /run/archiso ]]; then
 
     pacstrap /mnt - < "$SCRIPTDIR"/zarch/packages.txt
 
-    mv /mnt/boot/vmlinuz-linux /mnt/usr/lib/modules/vmlinuz
-    rm -rf /mnt/boot/*
-    mkdir -p /mnt/boot/EFI/BOOT
-
     genfstab -U /mnt >> /mnt/etc/fstab
 
     cp -r "$SCRIPTDIR" /mnt/.zenixarch/
 
-    echo "zenixark" > /mnt/etc/hostname
     echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
     echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen
 
@@ -115,6 +110,16 @@ if [[ -d /run/archiso ]]; then
     useradd -m user
     chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
     passwd --lock root
+
+    ## THIS IS UNTESTED! I just copied the method I used for mullvad-vpn-cli so it SHOULD work, I don't see why it wouldn't
+    (cd /.zenixarch/zarch/kernel/
+    pacman -S --noconfirm base-devel
+    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
+    sudo -u user makepkg -si --noconfirm
+    pacman -Rcns --noconfirm base-devel
+    mv /mnt/boot/vmlinuz-linux-zenixark /mnt/usr/lib/modules/vmlinuz
+    rm -rf /boot/* /etc/sudoers.d /.zenixarch/zarch/kernel/{src,pkg,*.*}
+    mkdir -p /boot/EFI/BOOT)
 
     mv /.zenixarch /home/user
 
