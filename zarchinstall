@@ -52,15 +52,19 @@ TIMERS=(
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
-    find "$SCRIPTDIR"/{etc,home,var} -type f | while read -r src; do
-        cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/}"
+    find "$SCRIPTDIR"/{etc,home} -type f | while read -r src; do
+        if [[ "$src" =~ adguardhome.yaml ]]; then
+            cmp -s "$src" /var/lib/private/adguardhome/AdGuardHome.yaml || install -Dm600 -o nobody -g nobody "$src" /var/lib/private/adguardhome/AdGuardHome.yaml
+        else
+            cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"}"
+        fi
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
 
     pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-    "$SCRIPTDIR"/zarch/bugfixes.sh
+    "$SCRIPTDIR"/misc/bugfixes.sh
 
     for svc in "${SERVICES[@]}"; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
@@ -75,9 +79,6 @@ configuration() {
 
     ln -sfn /tmp /home/user/.cache
     ln -sfn /tmp /home/user/.local
-
-    chmod 600 /var/lib/private/adguardhome/AdGuardHome.yaml
-    chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
 
     mkinitcpio -p linux-zenixark || true
