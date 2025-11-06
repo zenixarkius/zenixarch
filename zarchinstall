@@ -23,7 +23,6 @@ PACKAGES=(
     linux-firmware-intel
     neovim
     noto-fonts
-    opendoas
     pass-otp
     pipewire-jack
     pipewire-pulse
@@ -77,7 +76,7 @@ configuration() {
     ln -sfn /tmp /home/user/.cache
     ln -sfn /tmp /home/user/.local
 
-    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
+    chmod 600 /var/lib/private/adguardhome/AdGuardHome.yaml
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
 
@@ -161,7 +160,6 @@ if [[ -d /run/archiso ]]; then
 
         useradd -m user
         chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
-        passwd --lock root
 
         pacman -S --noconfirm base-devel
         echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
