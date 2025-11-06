@@ -1,8 +1,56 @@
 #!/bin/bash
-set -euo pipefail
-SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+set -euo pipefail
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
+
+PACKAGES=(
+    adguardhome
+    base
+    btrfs-progs
+    cachyos-keyring
+    cachyos-mirrorlist
+    cachyos-v3-mirrorlist
+    foot
+    git
+    grim
+    hyprland
+    hyprpaper
+    hyprpicker
+    intel-ucode
+    iptables-nft
+    iwd
+    librewolf-bin
+    linux-firmware-intel
+    neovim
+    noto-fonts
+    opendoas
+    pass-otp
+    pipewire-jack
+    pipewire-pulse
+    sbctl
+    slurp
+    ttf-nerd-fonts-symbols
+    wireguard-tools
+    wl-clipboard
+)
+
+SERVICES=(
+    adguardhome.service
+    getty@.service
+    iwd.service
+    nftables.service
+    overclock.service
+    rgb.service
+    systemd-timesyncd.service
+    wireguard.service
+)
+
+TIMERS=(
+    btrfs-scrub@-.timer
+    fstrim.timer
+)
+
+SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
     find "$SCRIPTDIR"/{etc,home,var} -type f | while read -r src; do
@@ -11,17 +59,20 @@ configuration() {
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
 
-    pacman -Syu --needed - < "$SCRIPTDIR"/zarch/packages.txt
+    pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-    while read -r svc; do systemctl enable $NOW "$svc"; done < "$SCRIPTDIR"/zarch/services.txt
-    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        grep -qx "$svc" "$SCRIPTDIR"/zarch/services.txt || systemctl disable $NOW "$svc"
+    "$SCRIPTDIR"/zarch/bugfixes.sh
+
+    for svc in "${SERVICES[@]}"; do
+        systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
     done
 
-    systemctl enable {fstrim,btrfs-scrub@-}.timer
-    systemctl mask systemd-boot-random-seed.service
+    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
+        [[ "${SERVICES[*]}" =~ $svc ]] || systemctl disable $NOW "$svc"
+    done
 
-    for ex in "$SCRIPTDIR"/zarch/extras/*; do "$ex"; done
+    systemctl enable "${TIMERS[@]}"
+    systemctl mask systemd-boot-random-seed.service
 
     ln -sfn /tmp /home/user/.cache
     ln -sfn /tmp /home/user/.local
@@ -37,19 +88,21 @@ configuration() {
         sbctl enroll-keys --tpm-eventlog
         sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
     else
-        echo -e "\e[33mSkipping Secure Boot as it is not in Setup Mode\e[0m"
+        echo "Skipping Secure Boot as it is not in Setup Mode"
     fi
 }
 
 if [[ -d /run/archiso ]]; then
     : "$DISK:?" "$PASS:?"
 
-    read -rp $'\e[31mThis will wipe every little thing on your disk and reformat\n\e[31mAlso, you should know EVERYTHING this does before running it because it makes a lot of assumptions\n\e[31mType "IK" to continue: \e[0m' CONFIRM
-    [[ "$CONFIRM" != "IK" ]] && echo -e "\e[31mYou didn't confirm you knew\e[0m" && exit 1
+    echo -e "You probably shouldn't be running this if you aren't Zenixark.\nType 'IK' to continue to disk wiping: "
+    read -r CONFIRM
+    [[ "$CONFIRM" == "IK" ]] || { echo "You didn't confirm you knew"; exit 1; }
 
-    umount -R /mnt &>/dev/null || true && umount -R /mnt/* &>/dev/null || true && cryptsetup close cryptroot &>/dev/null || true
+    umount -R /mnt || true
+    cryptsetup close cryptroot &> /dev/null || true
 
-    [[ "$DISK" =~ nvme ]] && nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096" && nvme format --lbaf=1 --force "/dev/$DISK"
+    [[ "$DISK" =~ nvme ]] && { nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096"; } && nvme format --lbaf=1 --force "/dev/$DISK"
 
     sgdisk --zap-all "/dev/$DISK"
     sgdisk -g "/dev/$DISK"
@@ -83,52 +136,48 @@ if [[ -d /run/archiso ]]; then
     mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
 
     reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
-    sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
+    sed -i "s/^#\(ParallelDownloads = 5\)/\1/" /etc/pacman.conf
 
-    curl https://mirror.cachyos.org/cachyos-repo.tar.xz > cachyos-repo.tar.xz
-    tar xvf cachyos-repo.tar.xz
+    curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
     (cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt - < "$SCRIPTDIR"/zarch/packages.txt
+    pacstrap /mnt "${PACKAGES[@]}"
 
     genfstab -U /mnt >> /mnt/etc/fstab
-
-    cp -r "$SCRIPTDIR" /mnt/.zenixarch/
 
     echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
     echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen
 
+    cp -r "$SCRIPTDIR" /mnt/.zenixarch/
+
     arch-chroot /mnt bash -e << CHROOT
-    export NOW="" SCRIPTDIR="/home/user/.zenixarch"
-    $(declare -f configuration)
+        $(declare -f configuration)
+        export NOW="" SCRIPTDIR=/home/user/.zenixarch
 
-    ln -sf "/usr/share/zoneinfo/America/New_York" /etc/localtime
-    hwclock --systohc
+        ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
+        hwclock --systohc
 
-    locale-gen
+        locale-gen
 
-    useradd -m user
-    chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
-    passwd --lock root
+        useradd -m user
+        chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
+        passwd --lock root
 
-    ## THIS IS UNTESTED! I just copied the method I used for mullvad-vpn-cli so it SHOULD work, I don't see why it wouldn't
-    (cd /.zenixarch/zarch/kernel/
-    pacman -S --noconfirm base-devel
-    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
-    sudo -u user makepkg -si --noconfirm
-    pacman -Rcns --noconfirm base-devel
-    mv /mnt/boot/vmlinuz-linux-zenixark /mnt/usr/lib/modules/vmlinuz
-    rm -rf /boot/* /etc/sudoers.d /.zenixarch/zarch/kernel/{src,pkg,*.*}
-    mkdir -p /boot/EFI/BOOT)
+        pacman -S --noconfirm base-devel
+        echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
+        (cd /.zenixarch/zarch/kernel/ && sudo -u user makepkg -si --noconfirm)
+        pacman -Rcns --noconfirm base-devel
 
-    mv /.zenixarch /home/user
+        mv /boot/vmlinuz-linux-zenixark /usr/lib/modules/vmlinuz
+        rm -rf /boot/* /etc/sudoers.d /.zenixarch/zarch/kernel/{src,pkg,*.*}
+        mkdir -p /boot/EFI/BOOT
+        mv /.zenixarch /home/user
 
-    configuration
+        configuration
 CHROOT
-
 else
     export NOW="--now" SCRIPTDIR="$SCRIPTDIR"
     configuration
 fi
 
-echo -e "\e[32mDone!\e[0m"
+echo "Done"

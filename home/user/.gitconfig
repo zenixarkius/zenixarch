@@ -11,10 +11,6 @@
 	ui = always
 [credential]
 	helper = store --file=/tmp/git-credentials
-[diff]
-	tool = nvimdiff
-[difftool "nvimdiff"]
-	cmd = nvim -d $LOCAL $REMOTE
 [alias]
 	d = diff --cached
 	l = log --oneline --graph --decorate --all

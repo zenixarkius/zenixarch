@@ -3,4 +3,4 @@
 #
 
 [[ -f ~/.bashrc ]] && . ~/.bashrc
-[[ -z $DISPLAY ]] && [[ $(tty) = /dev/tty1 ]] && hyprland
+[[ -z $DISPLAY && $(tty) == /dev/tty1 && $HYPRLAND != y ]] && hyprland && export HYPRLAND=y
