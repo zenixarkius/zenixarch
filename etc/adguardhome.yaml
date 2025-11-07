@@ -49,9 +49,9 @@ dns:
     - ::1/128
   cache_enabled: true
   cache_size: 4194304
-  cache_ttl_min: 0
+  cache_ttl_min: 300
   cache_ttl_max: 0
-  cache_optimistic: false
+  cache_optimistic: true
   bogus_nxdomain: []
   aaaa_disabled: false
   enable_dnssec: true
@@ -192,10 +192,6 @@ filters:
     url: https://energized.pro/ultimate/adblock.txt
     name: Energized Ultimate
     id: 1756073441
-  - enabled: true
-    url: https://raw.githubusercontent.com/badmojr/1Hosts/refs/heads/master/Xtra/adblock.txt
-    name: 1Hosts Xtra
-    id: 1761486666
 whitelist_filters: []
 user_rules:
   - '@@||amazontrust.com^$important'
