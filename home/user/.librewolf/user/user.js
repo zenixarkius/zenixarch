@@ -1,12 +1,25 @@
+// ========== TOR ==========
+
+user_pref("privacy.resistFingerprinting.letterboxing.dimensions", "1400x900");
+user_pref("extensions.hideNoScript", false);
+user_pref("browser.security_level.security_slider", 1);
+user_pref("torbrowser.settings.quickstart.enabled", true);
+
 // ========== GENERAL ==========
 
 user_pref("clipboard.autocopy", false);
 user_pref("middlemouse.paste", false);
-user_pref("browser.download.dir", "/home/user/");
+
 user_pref("browser.tabs.closeWindowWithLastTab", false);
 user_pref("browser.tabs.groups.enabled", false);
 
+user_pref("browser.search.separatePrivateDefault", false);
+user_pref("browser.download.dir", "/home/user/");
+
 // ========== UI ==========
+
+user_pref("browser.startup.homepage", "chrome://browser/content/blanktab.html");
+user_pref("browser.newtabpage.enabled", false);
 
 user_pref("browser.tabs.inTitlebar", 0);
 user_pref("browser.toolbars.bookmarks.visibility", "never");
@@ -67,12 +80,6 @@ user_pref("extensions.update.enabled", false); // uBlock doesn't update enough t
 user_pref("browser.translations.enable", false);
 user_pref("extensions.ml.enabled", false);
 
-user_pref("browser.startup.homepage", "chrome://browser/content/blanktab.html");
-user_pref("browser.newtabpage.enabled", false);
-user_pref("browser.newtabpage.activity-stream.showSearch", false);
-user_pref("browser.newtabpage.activity-stream.showSponsoredCheckboxes", false);
-
-user_pref("browser.search.separatePrivateDefault", false);
 user_pref("browser.urlbar.suggest.recentsearches", false);
 user_pref("browser.urlbar.suggest.history", false);
 user_pref("browser.urlbar.suggest.bookmark", false);
