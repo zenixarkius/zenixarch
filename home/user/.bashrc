@@ -4,7 +4,7 @@
 
 { (( EUID == 0 )) || [[ $- != *i* ]]; } && return
 
-## ========== OPTIONS ==========
+## ========== SANE DEFAULTS ==========
 
 bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
@@ -14,27 +14,12 @@ shopt -s histappend cdspell autocd cmdhist histverify
 export FUNCNEST=100
 
 export PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
-
 export HISTCONTROL=ignoredups:erasedups
 export HISTSIZE=10000
 export HISTFILESIZE=20000
 
-export MAKEFLAGS="-j$(nproc)"
-
-## ========== EXTERNAL SSD ==========
-
-alias mssd='doas bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
-alias ussd='doas bash -c "umount -R /mnt && cryptsetup close cryptext"'
-
-## ========== MAINTENANCE ==========
-
-alias update='doas bash -c "pacman -Sy archlinux-keyring && pacman -Su"'
-alias orphans='doas pacman -Rcns $(pacman -Qttdq)'
-alias circular='doas pacman -Rsu --print $(pacman -Qqd)'
-alias clean='yes | doas pacman -Scc'
-alias prune='tac ~/.bash_history | awk "!seen[\$0]++" | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
-
-## ========== SANE DEFAULTS ==========
+export MAKEFLAGS=-j24
+export PACMAN_AUTH=doas
 
 alias mv='mv -i'
 alias cp='cp -i'
@@ -47,6 +32,22 @@ alias sudo='doas'
 cd() { builtin cd "$@" && ls; }
 
 ## ========== UTILITIES ==========
+
+alias update='doas bash -c "pacman -Sy --noconfirm archlinux-keyring && pacman -Su"'
+
+alias orphans='doas pacman -Rcns $(pacman -Qttdq)'
+alias circular='doas pacman -Rsu --print $(pacman -Qqd)'
+
+alias clean='yes | doas pacman -Scc'
+alias prune='tac ~/.bash_history | awk "!seen[\$0]++" | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
+
+alias rsize='doas du -h --max-depth=1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'
+alias dsize='du -h --max-depth=1 .'
+
+alias mssd='doas bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
+alias ussd='doas bash -c "umount -R /mnt && cryptsetup close cryptext"'
+
+search() { doas find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$@*" -print; }
 
 extract() {
     if [ -f "$1" ]; then
@@ -73,6 +74,8 @@ leftovers() {
             done ;;
     esac
 }
+
+## ========== IGNORE ALL THAT BE BELOW ==========
 
 filters=(
     /home/user/.bash_logout
