@@ -16,19 +16,19 @@ configuration() {
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
 
-    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/misc/packages.md
+    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/misc/packages.txt
 
     "$SCRIPTDIR"/misc/bugfixes.sh
 
     while read -r svc; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
-    done < "$SCRIPTDIR"/misc/services.md
+    done < "$SCRIPTDIR"/misc/services.txt
 
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        grep -qx "$svc" "$SCRIPTDIR"/misc/services.md || systemctl disable $NOW "$svc"
+        grep -qx "$svc" "$SCRIPTDIR"/misc/services.txt || systemctl disable $NOW "$svc"
     done
 
-    xargs -a "$SCRIPTDIR"/misc/timers.md systemctl enable
+    xargs -a "$SCRIPTDIR"/misc/timers.txt systemctl enable
     systemctl mask systemd-boot-random-seed.service
 
     for d in .cache .local; do
@@ -96,7 +96,7 @@ if [[ -d /run/archiso ]]; then
     curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
     (cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt - < "$SCRIPTDIR"/misc/packages.md
+    pacstrap /mnt - < "$SCRIPTDIR"/misc/packages.txt
 
     genfstab -U /mnt >> /mnt/etc/fstab
 

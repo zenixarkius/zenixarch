@@ -84,7 +84,10 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │                                   ## to benchmark their performance hits later.
 │   └── PKGBUILD                        ## Compiles and packages my custom kernel + NVIDIA drivers
 ├── misc
-│   └── bugfixes.sh                     ## Some minor patches for random things
+│   ├── bugfixes.sh                     ## Some minor patches for random things
+│   ├── packages.txt                    ## Declarative list of pacman packages
+│   ├── services.txt                    ## Declarative list of systemd services
+│   └── timers.txt                      ## Declarative list of systemd timers
 └── zarchinstall                        ## The backbone of this project, it can do a full disk install from
                                         ## a live ISO and be ran over and over again post-install to
                                         ## idempotently reapply the repo's state.
