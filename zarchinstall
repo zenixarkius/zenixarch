@@ -1,9 +1,9 @@
 #!/bin/bash
-
 set -euo pipefail
+
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
-PACKAGES=(
+export PACKAGES=(
     adguardhome
     base
     btrfs-progs
@@ -23,6 +23,7 @@ PACKAGES=(
     linux-firmware-intel
     neovim
     noto-fonts
+    opendoas
     pass-otp
     pipewire-jack
     pipewire-pulse
@@ -34,7 +35,7 @@ PACKAGES=(
     wl-clipboard
 )
 
-SERVICES=(
+export SERVICES=(
     adguardhome.service
     getty@.service
     iwd.service
@@ -45,7 +46,7 @@ SERVICES=(
     wireguard.service
 )
 
-TIMERS=(
+export TIMERS=(
     btrfs-scrub@-.timer
     fstrim.timer
 )
@@ -80,6 +81,8 @@ configuration() {
 
     ln -sfn /tmp /home/user/.cache
     ln -sfn /tmp /home/user/.local
+
+    chmod 600 /etc/doas.conf
     chown -R user:user /home/user
 
     mkinitcpio -p linux-zenixark || true
@@ -162,6 +165,7 @@ if [[ -d /run/archiso ]]; then
 
         useradd -m user
         chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
+        passwd -l root
 
         pacman -S --noconfirm base-devel
         echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
@@ -176,7 +180,7 @@ if [[ -d /run/archiso ]]; then
         configuration
 CHROOT
 else
-    export NOW="--now" SCRIPTDIR="$SCRIPTDIR"
+    export NOW="--now"
     configuration
 fi
 

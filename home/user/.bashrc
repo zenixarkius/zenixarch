@@ -23,15 +23,15 @@ export MAKEFLAGS="-j$(nproc)"
 
 ## ========== EXTERNAL SSD ==========
 
-alias mssd='su bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
-alias ussd='su bash -c "umount -R /mnt && cryptsetup close cryptext"'
+alias mssd='doas bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
+alias ussd='doas bash -c "umount -R /mnt && cryptsetup close cryptext"'
 
 ## ========== MAINTENANCE ==========
 
-alias update='su bash -c "pacman -Sy archlinux-keyring && pacman -Su"'
-alias orphans='su pacman -Rcns $(pacman -Qttdq)'
-alias circular='su pacman -Rsu --print $(pacman -Qqd)'
-alias clean='su bash -c "yes | pacman -Scc"'
+alias update='doas bash -c "pacman -Sy archlinux-keyring && pacman -Su"'
+alias orphans='doas pacman -Rcns $(pacman -Qttdq)'
+alias circular='doas pacman -Rsu --print $(pacman -Qqd)'
+alias clean='yes | doas pacman -Scc'
 alias prune='tac ~/.bash_history | awk "!seen[\$0]++" | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
 
 ## ========== SANE DEFAULTS ==========
@@ -42,11 +42,9 @@ alias rm='rm -i'
 alias ls='ls -lha --color=always --group-directories-first'
 alias grep='grep --color=always'
 alias diff='diff --color=always'
-alias sudo='su'
-alias doas='su'
+alias sudo='doas'
 
 cd() { builtin cd "$@" && ls; }
-su() { command su -p -c "$(printf '%q ' "$@")"; }
 
 ## ========== UTILITIES ==========
 
@@ -57,7 +55,7 @@ extract() {
             *.tgz)       tar xvzf "$1" ;;
             *.tar.xz)    tar xvJf "$1" ;;
             *.tar)       tar xvf "$1" ;;
-            *.zip)       su bash -c "pacman -S --noconfirm unzip && unzip $1 && pacman -Rcns --noconfirm unzip" ;;
+            *.zip)       doas pacman -S --noconfirm --needed unzip && unzip "$1" && doas pacman -Rcns --noconfirm unzip ;;
             *)           echo "'$1' cannot be extracted" ;;
         esac
     fi
