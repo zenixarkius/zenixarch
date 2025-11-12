@@ -1,11 +1,11 @@
 [Unit]
 Description=Set NVIDIA overclocks
-After=wireguard.target
-Wants=wireguard.target
+After=wireguard.service
+Wants=wireguard.service
 
 [Service]
-WorkingDirectory=/opt
-ExecStart=/bin/bash -c 'if [[ ! -d nvml ]]; then python -m venv nvml; nvml/bin/pip install --upgrade pip; nvml/bin/pip install nvidia-ml-py; fi; nvml/bin/pip install --upgrade nvidia-ml-py; nvml/bin/python -c "from pynvml import *; nvmlInit(); myGPU=nvmlDeviceGetHandleByIndex(0); nvmlDeviceSetGpcClkVfOffset(myGPU,210); nvmlDeviceSetMemClkVfOffset(myGPU,3000)"'
+WorkingDirectory=/usr/local/bin
+ExecStart=/bin/bash -c 'if [[ ! -f nvidia_oc ]]; then curl -JLO https://github.com/Dreaming-Codes/nvidia_oc/releases/download/0.1.21/nvidia_oc; chmod +x nvidia_oc; fi; ./nvidia_oc set --index 0 --freq-offset 210 --mem-offset 3000'
 
 [Install]
 WantedBy=multi-user.target
