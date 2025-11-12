@@ -3,54 +3,6 @@ set -euo pipefail
 
 (( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
 
-export PACKAGES=(
-    adguardhome
-    base
-    btrfs-progs
-    cachyos-keyring
-    cachyos-mirrorlist
-    cachyos-v3-mirrorlist
-    foot
-    git
-    grim
-    hyprland
-    hyprpaper
-    hyprpicker
-    intel-ucode
-    iptables-nft
-    iwd
-    librewolf-bin
-    linux-firmware-intel
-    neovim
-    noto-fonts
-    opendoas
-    pass-otp
-    pipewire-jack
-    pipewire-pulse
-    sbctl
-    slurp
-    torbrowser-launcher
-    ttf-nerd-fonts-symbols
-    wireguard-tools
-    wl-clipboard
-)
-
-export SERVICES=(
-    adguardhome.service
-    getty@.service
-    iwd.service
-    nftables.service
-    overclock.service
-    rgb.service
-    systemd-timesyncd.service
-    wireguard.service
-)
-
-export TIMERS=(
-    btrfs-scrub@-.timer
-    fstrim.timer
-)
-
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
@@ -64,35 +16,34 @@ configuration() {
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
 
-    pacman -S --noconfirm --needed "${PACKAGES[@]}"
+    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/misc/packages.md
 
     "$SCRIPTDIR"/misc/bugfixes.sh
 
-    for svc in "${SERVICES[@]}"; do
+    while read -r svc; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
-    done
+    done < "$SCRIPTDIR"/misc/services.md
 
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        [[ "${SERVICES[*]}" =~ $svc ]] || systemctl disable $NOW "$svc"
+        grep -qx "$svc" "$SCRIPTDIR"/misc/services.md || systemctl disable $NOW "$svc"
     done
 
-    systemctl enable "${TIMERS[@]}"
+    xargs -a "$SCRIPTDIR"/misc/timers.md systemctl enable
     systemctl mask systemd-boot-random-seed.service
 
-    ln -sfn /tmp /home/user/.cache
-    ln -sfn /tmp /home/user/.local
+    for d in .cache .local; do
+        [[ $(readlink /home/user/$d) =~ /tmp ]] || ln -sfn /tmp /home/user/$d
+    done
 
     chmod 600 /etc/doas.conf
     chown -R user:user /home/user
 
-    mkinitcpio -p linux-zenixark || true
+    mkinitcpio -p linux-zenixark || :
 
     if sbctl status | grep -q "Setup Mode:.*Enabled"; then
         sbctl create-keys
         sbctl enroll-keys --tpm-eventlog
         sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-    else
-        echo "Skipping Secure Boot as it is not in Setup Mode"
     fi
 }
 
@@ -103,8 +54,8 @@ if [[ -d /run/archiso ]]; then
     read -r CONFIRM
     [[ "$CONFIRM" == "IK" ]] || { echo "You didn't confirm you knew"; exit 1; }
 
-    umount -R /mnt || true
-    cryptsetup close cryptroot &> /dev/null || true
+    umount -R /mnt &> /dev/null || :
+    cryptsetup close cryptroot &> /dev/null || :
 
     [[ "$DISK" =~ nvme ]] && { nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096"; } && nvme format --lbaf=1 --force "/dev/$DISK"
 
@@ -145,7 +96,7 @@ if [[ -d /run/archiso ]]; then
     curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
     (cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt "${PACKAGES[@]}"
+    pacstrap /mnt - < "$SCRIPTDIR"/misc/packages.md
 
     genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -180,7 +131,7 @@ if [[ -d /run/archiso ]]; then
         configuration
 CHROOT
 else
-    export NOW="--now"
+    NOW="--now"
     configuration
 fi
 
