@@ -6,11 +6,13 @@ set -euo pipefail
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
-    find "$SCRIPTDIR"/{etc,home} -type f | while read -r src; do
+    find "$SCRIPTDIR"/{bin,etc,home} -type f | while read -r src; do
         if [[ "$src" =~ adguardhome.yaml ]]; then
             cmp -s "$src" /var/lib/private/adguardhome/AdGuardHome.yaml || install -Dm600 -o nobody -g nobody "$src" /var/lib/private/adguardhome/AdGuardHome.yaml
+        elif [[ "$src" =~ /bin/ ]]; then
+            cmp -s "$src" "/usr/local/${src#"$SCRIPTDIR"/}" || install -Dm755 "$src" "/usr/local/${src#"$SCRIPTDIR"/}"
         else
-            cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"}"
+            cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/}"
         fi
     done
 
