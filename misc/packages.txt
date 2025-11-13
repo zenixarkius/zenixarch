@@ -6,7 +6,7 @@ cachyos-mirrorlist
 cachyos-v3-mirrorlist
 foot
 git
-grim
+grimblast-git
 hyprland
 hyprpaper
 hyprpicker
@@ -22,7 +22,6 @@ pass-otp
 pipewire-jack
 pipewire-pulse
 sbctl
-slurp
 torbrowser-launcher
 ttf-nerd-fonts-symbols
 wireguard-tools
