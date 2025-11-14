@@ -6,39 +6,35 @@ set -euo pipefail
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
-    find "$SCRIPTDIR"/{bin,etc,home} -type f | while read -r src; do
-        if [[ "$src" =~ adguardhome.yaml ]]; then
-            cmp -s "$src" /var/lib/private/adguardhome/AdGuardHome.yaml || install -Dm600 -o nobody -g nobody "$src" /var/lib/private/adguardhome/AdGuardHome.yaml
-        elif [[ "$src" =~ /bin/ ]]; then
-            cmp -s "$src" "/usr/local/${src#"$SCRIPTDIR"/}" || install -Dm755 "$src" "/usr/local/${src#"$SCRIPTDIR"/}"
-        else
-            cmp -s "$src" "/${src#"$SCRIPTDIR"/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/}"
-        fi
+    find "$SCRIPTDIR"/rootfs -type f | while read -r src; do
+        cmp -s "$src" "/${src#"$SCRIPTDIR"/rootfs/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/rootfs/}"
     done
 
     sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
 
-    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/misc/packages.txt
+    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/lists/packages.txt
 
-    "$SCRIPTDIR"/misc/bugfixes.sh
+    "$SCRIPTDIR"/utils/bugfixes.sh
 
     while read -r svc; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
-    done < "$SCRIPTDIR"/misc/services.txt
+    done < "$SCRIPTDIR"/lists/services.txt
 
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        grep -qx "$svc" "$SCRIPTDIR"/misc/services.txt || systemctl disable $NOW "$svc"
+        grep -qx "$svc" "$SCRIPTDIR"/lists/services.txt || systemctl disable $NOW "$svc"
     done
 
-    xargs -a "$SCRIPTDIR"/misc/timers.txt systemctl enable
+    xargs -a "$SCRIPTDIR"/lists/timers.txt systemctl enable
     systemctl mask systemd-boot-random-seed.service
 
     for d in .cache .local; do
         [[ $(readlink /home/user/$d) =~ /tmp ]] || ln -sfn /tmp /home/user/$d
     done
 
-    chmod 600 /etc/doas.conf
+    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
+    chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
+    chmod +x /usr/local/bin/*
 
     mkinitcpio -p linux-zenixark || :
 
@@ -63,8 +59,8 @@ if [[ -d /run/archiso ]]; then
 
     sgdisk --zap-all "/dev/$DISK"
     sgdisk -g "/dev/$DISK"
-    sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:"EFI System" "/dev/$DISK"
-    sgdisk -I -n 2:0:0 -t 2:8300 -c 2:"Linux filesystem" "/dev/$DISK"
+    sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:"bootfs" "/dev/$DISK"
+    sgdisk -I -n 2:0:0 -t 2:8300 -c 2:"rootfs" "/dev/$DISK"
 
     [[ "$DISK" =~ [0-9]$ ]] && DISK="${DISK}p"
 
@@ -98,7 +94,7 @@ if [[ -d /run/archiso ]]; then
     curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
     (cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt - < "$SCRIPTDIR"/misc/packages.txt
+    pacstrap /mnt - < "$SCRIPTDIR"/lists/packages.txt
 
     genfstab -U /mnt >> /mnt/etc/fstab
 
