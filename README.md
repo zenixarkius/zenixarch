@@ -49,8 +49,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   │   └── linux-zenixark.preset       ## A Unified Kernel Image preset
 │   │   ├── pam.d
 │   │   │   └── login                       ## TTY autologin (password)
-│   │   ├── sysctl.d
-│   │   │   └── 99-performance.conf         ## Currently just disables split_lock_mitigate
 │   │   ├── systemd
 │   │   │   ├── coredump.conf.d
 │   │   │   │   └── disable.conf
