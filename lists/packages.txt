@@ -22,7 +22,7 @@ pass-otp
 pipewire-jack
 pipewire-pulse
 sbctl
-torbrowser-launcher
+signal-desktop
 ttf-nerd-fonts-symbols
 wireguard-tools
 wl-clipboard
