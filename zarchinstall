@@ -10,8 +10,6 @@ configuration() {
         cmp -s "$src" "/${src#"$SCRIPTDIR"/rootfs/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/rootfs/}"
     done
 
-    sed -i "s|\${UUID}|$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')")|" /etc/mkinitcpio.d/cmdline
-
     pacman -S --noconfirm --needed - < "$SCRIPTDIR"/lists/packages.txt
 
     "$SCRIPTDIR"/utils/bugfixes.sh
@@ -118,11 +116,13 @@ if [[ -d /run/archiso ]]; then
 
         pacman -S --noconfirm base-devel
         echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
-        (cd /.zenixarch/zarch/kernel/ && sudo -u user makepkg -si --noconfirm)
+        (cd /.zenixarch/kernel/
+        sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" config
+        sudo -u user makepkg -si --noconfirm)
         pacman -Rcns --noconfirm base-devel
 
         mv /boot/vmlinuz-linux-zenixark /usr/lib/modules/vmlinuz
-        rm -rf /boot/* /etc/sudoers.d /.zenixarch/zarch/kernel/{src,pkg,*.*}
+        rm -rf /boot/* /etc/sudoers.d /.zenixarch/kernel/{src,pkg,*.*}
         mkdir -p /boot/EFI/BOOT
         mv /.zenixarch /home/user
 

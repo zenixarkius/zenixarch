@@ -46,7 +46,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   ├── iwd
 │   │   │   └── main.conf                   ## Allows iwd to configure the network
 │   │   ├── mkinitcpio.d
-│   │   │   ├── cmdline                     ## Root partition flags
 │   │   │   └── linux-zenixark.preset       ## A Unified Kernel Image preset
 │   │   ├── pam.d
 │   │   │   └── login                       ## TTY autologin (password)
