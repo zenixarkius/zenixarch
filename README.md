@@ -10,7 +10,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
                  .o+`                    -------------
                 `ooo/                    OS: Arch Linux x86_64
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
-              `+oooooo:                  Kernel: Linux 6.17.7-1-zenixark
+              `+oooooo:                  Kernel: Linux 6.17.8-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
             `/:-:++oooo+:                Packages: 411 (pacman)
            `/++++/+++++++:               Shell: bash 5.3.3
@@ -35,7 +35,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │                                       ## and eventually AutoFDO and Propeller PGO. Sets BBR + FQ as the default
 │   │                                       ## TCP control, PREEMPT (low-latency desktop) on, 1000Hz timer, and other
 │   │                                       ## little things that count. Also strips EVERY unnecessary subsystem and
-│   │                                       ## driver EXCEPT the bare minimum required for my desktop to work.
+│   │                                       ## driver EXCEPT the bare minimum required for my desktop to work
 │   └── PKGBUILD                            ## Compiles and packages my custom kernel + NVIDIA drivers
 ├── lists
 │   ├── packages.txt                        ## Declarative list of pacman packages
@@ -46,12 +46,11 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   ├── iwd
 │   │   │   └── main.conf                   ## Allows iwd to configure the network
 │   │   ├── mkinitcpio.d
-│   │   │   ├── cmdline                     ## Root partition flags + some minor hardening
+│   │   │   ├── cmdline                     ## Root partition flags
 │   │   │   └── linux-zenixark.preset       ## A Unified Kernel Image preset
 │   │   ├── pam.d
 │   │   │   └── login                       ## TTY autologin (password)
 │   │   ├── sysctl.d
-│   │   │   ├── 99-hardening.conf           ## Minor kernel and network stack hardening
 │   │   │   └── 99-performance.conf         ## Currently just disables split_lock_mitigate
 │   │   ├── systemd
 │   │   │   ├── coredump.conf.d
@@ -79,7 +78,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │       │       └── lazy-lock.json
 │   │       ├── .librewolf
 │   │       │   ├── user
-│   │       │   │   └── user.js             ## Extra aesthetics and hardening over librewolf's defaults
+│   │       │   │   └── user.js             ## Extra ui, performance, and hardening tweaks over librewolf's defaults
 │   │       │   ├── installs.ini
 │   │       │   └── profiles.ini
 │   │       ├── .bash_profile               ## Autostarts Hyprland
@@ -88,7 +87,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   ├── usr
 │   │   └── local
 │   │       └── bin
-│   │           └── overclock               ## Ran by overclock.service to set my preferred NVIDIA overclocks via NVML
+│   │           └── overclock               ## Ran by overclock.service to set my NVIDIA overclocks via NVML
 │   └── var
 │       └── lib
 │           └── private
@@ -99,7 +98,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   └── overclock.c                         ## Source of the overclock binary
 └── zarchinstall                            ## The backbone of this project, it can do a full disk install from
                                             ## a live ISO and be ran over and over again post-install to
-                                            ## idempotently reapply the repo's state.
+                                            ## idempotently reapply the repo's state
 ```
 
 ## Usage
