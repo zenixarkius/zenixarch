@@ -38,7 +38,6 @@ alias update='doas bash -c "pacman -Sy --noconfirm archlinux-keyring && pacman -
 alias orphans='doas pacman -Rcns $(pacman -Qttdq)'
 alias circular='doas pacman -Rsu --print $(pacman -Qqd)'
 
-alias clean='yes | doas pacman -Scc'
 alias prune='tac ~/.bash_history | awk "!seen[\$0]++" | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
 
 alias rsize='doas du -h --max-depth=1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'

@@ -4,7 +4,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/bin/bash -c 'if wg show; then wg-quick down wg0; fi; ln -sf "$(find /etc/wireguard/configs -maxdepth 1 -name '*.conf' -print | shuf -n 1)" /etc/wireguard/wg0.conf; wg-quick up wg0;'
+WorkingDirectory=/etc/wireguard
+ExecStart=/bin/bash -c 'wg show && wg-quick down wg0; ln -sf "$(find configs -name "*.conf" -print | shuf -n 1)" wg0.conf && wg-quick up wg0'
 
 [Install]
 WantedBy=multi-user.target

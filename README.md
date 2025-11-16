@@ -53,8 +53,10 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   │   ├── coredump.conf.d
 │   │   │   │   └── disable.conf
 │   │   │   └── system
-│   │   │       ├── getty@tty1.service.d    ## TTY autologin (user)
-│   │   │       │   └── autologin.conf
+│   │   │       ├── getty@tty1.service.d
+│   │   │       │   └── autologin.conf      ## TTY autologin (user)
+│   │   │       ├── clean.service           ## Cleans pacman cache and systemd journals
+│   │   │       ├── clean.timer             ## Run the above daily
 │   │   │       ├── overclock.service       ## Applies my NVIDIA overclocks on startup
 │   │   │       ├── rgb.service             ## Applies my static blues on startup
 │   │   │       └── wireguard.service       ## Connects to a random VPN config on startup

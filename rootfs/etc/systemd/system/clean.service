@@ -1,0 +1,6 @@
+[Unit]
+Description=Flush pacman cache and systemd journals
+
+[Service]
+WorkingDirectory=/home/user
+ExecStart=/bin/bash -c 'yes | pacman -Scc; journalctl --rotate; journalctl --vacuum-time=1s'
