@@ -4,8 +4,6 @@
 
 { (( EUID == 0 )) || [[ $- != *i* ]]; } && return
 
-## ========== SANE DEFAULTS ==========
-
 bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
@@ -19,7 +17,7 @@ export HISTSIZE=10000
 export HISTFILESIZE=20000
 
 export MAKEFLAGS=-j$(nproc)
-export PACMAN_AUTH=doas
+export PACMAN_AUTH=pkexec
 
 alias mv='mv -i'
 alias cp='cp -i'
@@ -27,48 +25,27 @@ alias rm='rm -i'
 alias ls='ls -lha --color=always --group-directories-first'
 alias grep='grep --color=always'
 alias diff='diff --color=always'
-alias sudo='doas'
+
+alias orphans='sudo bash -c "pacman -Rcns \$(pacman -Qttdq); pacman -Runs \$(pacman -Qqd)"'
+alias prune='cat ~/.bash_history | awk "!seen[\$0]++" > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
+
+alias mssd='sudo bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
+alias ussd='sudo bash -c "umount -R /mnt && cryptsetup close cryptext"'
 
 cd() { builtin cd "$@" && ls; }
 
-## ========== UTILITIES ==========
-
-alias orphans='doas pacman -Rcns $(pacman -Qttdq); doas pacman -Runs $(pacman -Qqd)'
-
-alias prune='cat ~/.bash_history | awk "!seen[\$0]++" > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
-
-alias mssd='doas bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
-alias ussd='doas bash -c "umount -R /mnt && cryptsetup close cryptext"'
-
-search() { doas find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print; }
-
-extract() {
-    if [ -f "$1" ]; then
-        case "$1" in
-            *.tar.gz)    tar xvzf "$1" ;;
-            *.tgz)       tar xvzf "$1" ;;
-            *.tar.xz)    tar xvJf "$1" ;;
-            *.tar)       tar xvf "$1" ;;
-            *.zip)       doas pacman -S --noconfirm --needed unzip && unzip "$1" && doas pacman -Rcns --noconfirm unzip ;;
-            *)           echo "'$1' cannot be extracted" ;;
-        esac
-    fi
-}
+search() { sudo find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print; }
 
 leftovers() {
     case "$1" in
-        -p)
-            for f in "${filters[@]}"; do
-                [[ -e $f ]] || echo "$f"
-            done ;;
-        *)
-            find "$HOME" "$HOME/.config" /etc /var/lib /var/cache /var/log -maxdepth 1 | while read -r lo; do
+        -p) for f in "${filters[@]}"; do [[ -e $f ]] || echo "$f"; done ;;
+        *)  find ~{,/.config} /etc /var/{lib,cache,log} -maxdepth 1 | while read -r lo; do
                 [[ "${filters[*]}" =~ $lo ]] || du -sh "$lo" 2> /dev/null
             done ;;
     esac
 }
 
-## ========== IGNORE ALL THAT BE BELOW ==========
+sudo() { su -p -c "$(printf '%q ' "$@")"; }
 
 filters=(
     /home/user/.bash_logout
@@ -86,6 +63,7 @@ filters=(
     /home/user/.config/hypr
     /home/user/.config/gtk-3.0
     /home/user/.config/nvim
+    /home/user/.config/Signal
     /etc/adjtime
     /etc/alsa
     /etc/arch-release
@@ -99,13 +77,12 @@ filters=(
     /etc/bindresvport.blacklist
     /etc/ca-certificates
     /etc/conf.d
-    /etc/crypttab
     /etc/credstore
     /etc/credstore.encrypted
+    /etc/crypttab
     /etc/dconf
     /etc/debuginfod
     /etc/default
-    /etc/doas.conf
     /etc/e2scrub.conf
     /etc/ebtables.conf
     /etc/environment
@@ -128,6 +105,7 @@ filters=(
     /etc/iptables
     /etc/issue
     /etc/iwd
+    /etc/kernel
     /etc/krb5.conf
     /etc/ld.so.cache
     /etc/ld.so.conf
@@ -188,7 +166,6 @@ filters=(
     /etc/subgid-
     /etc/subuid
     /etc/subuid-
-    /etc/sysctl.d
     /etc/systemd
     /etc/tpm2-tss
     /etc/ts.conf

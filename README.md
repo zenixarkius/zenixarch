@@ -47,20 +47,17 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   │   └── main.conf                   ## Allows iwd to configure the network
 │   │   ├── mkinitcpio.d
 │   │   │   └── linux-zenixark.preset       ## A Unified Kernel Image preset
-│   │   ├── pam.d
-│   │   │   └── login                       ## TTY autologin (password)
 │   │   ├── systemd
 │   │   │   ├── coredump.conf.d
 │   │   │   │   └── disable.conf
 │   │   │   └── system
-│   │   │       ├── getty@tty1.service.d
-│   │   │       │   └── autologin.conf      ## TTY autologin (user)
+│   │   │       ├── getty@.service.d
+│   │   │       │   └── autologin.conf      ## TTY autologin
 │   │   │       ├── clean.service           ## Cleans pacman cache and systemd journals
 │   │   │       ├── clean.timer             ## Run the above daily
 │   │   │       ├── overclock.service       ## Applies my NVIDIA overclocks on startup
 │   │   │       ├── rgb.service             ## Applies my static blues on startup
 │   │   │       └── wireguard.service       ## Connects to a random VPN config on startup
-│   │   ├── doas.conf
 │   │   ├── mkinitcpio.conf                 ## The minimum hooks required to boot my custom kernel
 │   │   ├── nftables.conf                   ## Strict default-deny firewall rules
 │   │   └── pacman.conf                     ## Adds CachyOS repos for the extra optimization (and librewolf)
@@ -80,8 +77,8 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │       │   │   └── user.js             ## Extra ui, performance, and hardening tweaks over librewolf's defaults
 │   │       │   ├── installs.ini
 │   │       │   └── profiles.ini
-│   │       ├── .bash_profile               ## Autostarts Hyprland
-│   │       ├── .bashrc                     ## Numerous useful aliases for file management and system maintenance
+│   │       ├── .bash_profile               ## Autostart Hyprland
+│   │       ├── .bashrc                     ## Some useful aliases for system maintenance
 │   │       └── .gitconfig
 │   ├── usr
 │   │   └── local

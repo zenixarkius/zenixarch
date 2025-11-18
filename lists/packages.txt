@@ -17,7 +17,6 @@ librewolf-bin
 linux-firmware-intel
 neovim
 noto-fonts
-opendoas
 pass-otp
 pipewire-jack
 pipewire-pulse

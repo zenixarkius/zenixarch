@@ -22,14 +22,12 @@ configuration() {
         grep -qx "$svc" "$SCRIPTDIR"/lists/services.txt || systemctl disable $NOW "$svc"
     done
 
-    xargs -a "$SCRIPTDIR"/lists/timers.txt systemctl enable
+    systemctl enable $(cat "$SCRIPTDIR"/lists/timers.txt)
     systemctl mask systemd-boot-random-seed.service
 
-    for d in .cache .local; do
-        [[ $(readlink /home/user/$d) =~ /tmp ]] || ln -sfn /tmp /home/user/$d
-    done
+    for d in .cache .local; do [[ $(readlink /home/user/$d) =~ /tmp ]] || ln -sfn /tmp /home/user/$d; done
 
-    chmod 600 /etc/doas.conf /var/lib/private/adguardhome/AdGuardHome.yaml
+    chmod 600 /var/lib/private/adguardhome/AdGuardHome.yaml
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
     chmod +x /usr/local/bin/*
@@ -111,8 +109,7 @@ if [[ -d /run/archiso ]]; then
         locale-gen
 
         useradd -m user
-        chpasswd <<< "root:$PASS"$'\n'"user:$PASS"
-        passwd -l root
+        chpasswd <<< "root:$PASS"
 
         pacman -S --noconfirm base-devel
         echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
