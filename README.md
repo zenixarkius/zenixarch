@@ -82,7 +82,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │       │   └── profiles.ini
 │   │       ├── .bash_profile               ## Autostarts Hyprland
 │   │       ├── .bashrc                     ## Numerous useful aliases for file management and system maintenance
-│   │       └── .gitconfig                  ## A few nice aliases for git
+│   │       └── .gitconfig
 │   ├── usr
 │   │   └── local
 │   │       └── bin

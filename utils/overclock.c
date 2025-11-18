@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Requires cuda of all things to be installed during compilation for the nvml headers
-// clang -lnvidia-ml -o overclock overclock.c && strip overclock
-
 int check(nvmlReturn_t status) {
     if (status != NVML_SUCCESS) {
         printf("Error: %s\n", nvmlErrorString(status));
