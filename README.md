@@ -48,8 +48,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   ├── mkinitcpio.d
 │   │   │   └── linux-zenixark.preset       ## A Unified Kernel Image preset
 │   │   ├── systemd
-│   │   │   ├── coredump.conf.d
-│   │   │   │   └── disable.conf
 │   │   │   └── system
 │   │   │       ├── getty@.service.d
 │   │   │       │   └── autologin.conf      ## TTY autologin
