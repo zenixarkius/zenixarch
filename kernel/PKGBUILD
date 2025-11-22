@@ -32,7 +32,7 @@ prepare() {
 
     cp ../config .config
     make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 olddefconfig
-    diff --color=always ../config .config
+    diff --color=always ../config .config || read -p "Press enter to confirm"
 
     make -s kernelrelease > version
 }

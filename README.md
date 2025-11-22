@@ -32,8 +32,8 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 .
 ├── kernel
 │   ├── config                              ## Uses the BORE scheduler, CachyOS patchsets, O3, ThinLTO, -march=native,
-│   │                                       ## and eventually AutoFDO and Propeller PGO. Sets BBR + FQ as the default
-│   │                                       ## TCP control, PREEMPT (low-latency desktop) on, 1000Hz timer, and other
+│   │                                       ## and eventually AutoFDO and Propeller PGO. Sets BBR3 as the default TCP
+│   │                                       ## control, PREEMPT (low-latency desktop) on, 1000Hz timer, and other
 │   │                                       ## little things that count. Also strips EVERY unnecessary subsystem and
 │   │                                       ## driver EXCEPT the bare minimum required for my desktop to work
 │   └── PKGBUILD                            ## Compiles and packages my custom kernel + NVIDIA drivers
