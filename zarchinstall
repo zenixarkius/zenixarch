@@ -1,13 +1,13 @@
 #!/bin/bash
 set -euo pipefail
 
-(( EUID == 0 )) || { echo "This script needs to be run as root"; exit 1; }
+(( EUID == 0 )) || { echo This script needs to be run as root; exit 1; }
 
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
     find "$SCRIPTDIR"/rootfs -type f | while read -r src; do
-        cmp -s "$src" "/${src#"$SCRIPTDIR"/rootfs/}" || install -Dm644 "$src" "/${src#"$SCRIPTDIR"/rootfs/}"
+        cmp -s "$src" /"${src#"$SCRIPTDIR"/rootfs/}" || install -Dm644 "$src" /"${src#"$SCRIPTDIR"/rootfs/}"
     done
 
     pacman -S --noconfirm --needed - < "$SCRIPTDIR"/lists/packages.txt
@@ -22,17 +22,20 @@ configuration() {
         grep -qx "$svc" "$SCRIPTDIR"/lists/services.txt || systemctl disable $NOW "$svc"
     done
 
+    # shellcheck disable=2046
     systemctl enable $(cat "$SCRIPTDIR"/lists/timers.txt)
     systemctl mask systemd-boot-random-seed.service
 
-    for d in .cache .local; do [[ $(readlink /home/user/$d) =~ /tmp ]] || ln -sfn /tmp /home/user/$d; done
+    for d in .cache .local; do
+        [[ $(readlink /home/user/$d) == /tmp ]] || ln -sfn /tmp /home/user/$d
+    done
 
     chmod 600 /var/lib/private/adguardhome/AdGuardHome.yaml
     chown -R nobody:nobody /var/lib/private/adguardhome
     chown -R user:user /home/user
     chmod +x /usr/local/bin/*
 
-    mkinitcpio -p linux-zenixark || :
+    mkinitcpio -P || :
 
     if sbctl status | grep -q "Setup Mode:.*Enabled"; then
         sbctl create-keys
@@ -45,25 +48,25 @@ if [[ -d /run/archiso ]]; then
     : "$DISK:?" "$PASS:?"
 
     echo -e "You probably shouldn't be running this if you aren't Zenixark.\nType 'IK' to continue to disk wiping: "
-    read -r CONFIRM
-    [[ "$CONFIRM" == "IK" ]] || { echo "You didn't confirm you knew"; exit 1; }
+    read -r IK
+    [[ "$IK" == IK ]] || { echo "You didn't confirm you knew"; exit 1; }
 
     umount -R /mnt &> /dev/null || :
     cryptsetup close cryptroot &> /dev/null || :
 
-    [[ "$DISK" =~ nvme ]] && { nvme id-ns -H "/dev/$DISK" | grep -q "LBA Format  1.*Data Size: 4096"; } && nvme format --lbaf=1 --force "/dev/$DISK"
+    [[ "$DISK" =~ nvme ]] && { nvme id-ns -H /dev/"$DISK" | grep -q "LBA Format  1.*Data Size: 4096"; } && nvme format --lbaf=1 --force /dev/"$DISK"
 
-    sgdisk --zap-all "/dev/$DISK"
-    sgdisk -g "/dev/$DISK"
-    sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:"bootfs" "/dev/$DISK"
-    sgdisk -I -n 2:0:0 -t 2:8300 -c 2:"rootfs" "/dev/$DISK"
+    sgdisk --zap-all /dev/"$DISK"
+    sgdisk -g /dev/"$DISK"
+    sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs /dev/"$DISK"
+    sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs /dev/"$DISK"
 
-    [[ "$DISK" =~ [0-9]$ ]] && DISK="${DISK}p"
+    [[ "$DISK" =~ [0-9]$ ]] && DISK="$DISK"p
 
-    mkfs.fat -F 32 "/dev/${DISK}1"
+    mkfs.fat -F 32 /dev/"$DISK"1
 
-    echo "$PASS" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 "/dev/${DISK}2"
-    echo "$PASS" | cryptsetup open "/dev/${DISK}2" cryptroot
+    echo "$PASS" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 /dev/"$DISK"2
+    echo "$PASS" | cryptsetup open /dev/"$DISK"2 cryptroot
 
     mkfs.btrfs -f /dev/mapper/cryptroot
 
@@ -78,7 +81,7 @@ if [[ -d /run/archiso ]]; then
 
     mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
     mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
-    mount -o defaults,nodev,nosuid,noexec,umask=0077 "/dev/${DISK}1" /mnt/boot
+    mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"$DISK"1 /mnt/boot
     mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
     mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/var/log
     mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
@@ -94,40 +97,27 @@ if [[ -d /run/archiso ]]; then
 
     genfstab -U /mnt >> /mnt/etc/fstab
 
-    echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
-    echo "en_US.UTF-8 UTF-8" > /mnt/etc/locale.gen
+    echo LANG=en_US.UTF-8 > /mnt/etc/locale.conf
+    echo en_US.UTF-8 UTF-8 > /mnt/etc/locale.gen
 
-    cp -r "$SCRIPTDIR" /mnt/.zenixarch/
+    ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
 
-    arch-chroot /mnt bash -e << CHROOT
-        $(declare -f configuration)
-        export NOW="" SCRIPTDIR=/home/user/.zenixarch
+    arch-chroot /mnt bash -ec "hwclock --systohc; locale-gen; useradd -m user; chpasswd <<< root:$PASS"
 
-        ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
-        hwclock --systohc
+    cp -r "$SCRIPTDIR" /mnt/home/user/.zenixarch/
 
-        locale-gen
+    pacstrap /mnt base-devel
+    echo "user ALL=(ALL) NOPASSWD: ALL" > /mnt/etc/sudoers.d/00_user
+    sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" /mnt/home/user/.zenixarch/kernel/config
 
-        useradd -m user
-        chpasswd <<< "root:$PASS"
+    arch-chroot /mnt bash -ec "cd /home/user/.zenixarch/kernel; sudo -u user makepkg -si --noconfirm; pacman -Rcns --noconfirm base-devel"
 
-        pacman -S --noconfirm base-devel
-        echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
-        (cd /.zenixarch/kernel/
-        sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" config
-        sudo -u user makepkg -si --noconfirm)
-        pacman -Rcns --noconfirm base-devel
+    rm -rf /mnt/{boot/*,etc/sudoers.d,home/user/.zenixarch/kernel/{src,pkg,*.*}}
+    mkdir -p /mnt/boot/EFI/BOOT
 
-        mv /boot/vmlinuz-linux-zenixark /usr/lib/modules/vmlinuz
-        rm -rf /boot/* /etc/sudoers.d /.zenixarch/kernel/{src,pkg,*.*}
-        mkdir -p /boot/EFI/BOOT
-        mv /.zenixarch /home/user
-
-        configuration
-CHROOT
+    arch-chroot /mnt bash -ec "$(declare -f configuration); NOW='' SCRIPTDIR=/home/user/.zenixarch configuration"
 else
-    NOW="--now"
-    configuration
+    NOW=--now configuration
 fi
 
-echo "Done"
+echo Done
