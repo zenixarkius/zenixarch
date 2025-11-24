@@ -1,4 +1,4 @@
-pkgver=6.17.8
+pkgver=6.17.9
 nvver=580.105.08
 
 pkgname=linux-zenixark
@@ -13,9 +13,9 @@ source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-$pkgver.t
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
         config)
 
-sha256sums=('5a8de64a75fca706c01c6c0a77cf75a74618439db195e25f1f0268af6b2fb1da'
+sha256sums=('6d08803b953c509df48d44d3281ed392524321d8bb353eb21c0555790c8f8e06'
             'd9c6e8188672f3eb74dd04cfa69dd58479fa1d0162c8c28c8d17625763293475'
-            'fd0951f22f117263c39a410a646194685aacb4a073da7759de9406f88c396adf'
+            '3e6c31174af83818441611ba43936b620794c92530b17c933a3a5de45b03af48'
             'b7f52515927d1938f88b593141c4db65cf0827dfa3b4f2cf9f7bef493aa786c9'
             '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
             'SKIP')
