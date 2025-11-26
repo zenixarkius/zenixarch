@@ -36,31 +36,24 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │                                       ## control, PREEMPT (low-latency desktop) on, 1000Hz timer, and other
 │   │                                       ## little things that count. Also strips EVERY unnecessary subsystem and
 │   │                                       ## driver EXCEPT the bare minimum required for my desktop to work
-│   └── PKGBUILD                            ## Compiles and packages my custom kernel + NVIDIA drivers
-├── lists
-│   ├── packages.txt                        ## Declarative list of pacman packages
-│   ├── services.txt                        ## Declarative list of systemd services
-│   └── timers.txt                          ## Declarative list of systemd timers
+│   └── PKGBUILD                            ## Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
 │   ├── extras.sh                           ## Some minor patches and non-standard package handling
 │   ├── overclock.c                         ## Source of the overclock binary
-│   └── ublock.json                         ## An absurdly strict uBo config, this has to be manually imported
+│   └── ublock.json                         ## A REALLY heavy handed uBlock config, this has to be manually imported
 ├── rootfs
 │   ├── etc
 │   │   ├── iwd
 │   │   │   └── main.conf                   ## Allows iwd to configure the network
 │   │   ├── mkinitcpio.d
-│   │   │   └── linux-zenixark.preset       ## A Unified Kernel Image preset
+│   │   │   └── linux-zenixark.preset       ## Unified Kernel Image preset
 │   │   ├── systemd
 │   │   │   └── system
 │   │   │       ├── getty@.service.d
 │   │   │       │   └── autologin.conf      ## TTY autologin
-│   │   │       ├── clean.service           ## Cleans pacman cache and systemd journals
-│   │   │       ├── clean.timer             ## Run the above daily
-│   │   │       ├── overclock.service       ## Applies my NVIDIA overclocks on startup
-│   │   │       ├── rgb.service             ## Applies my static blues on startup
+│   │   │       ├── misc.service            ## Applies NVIDIA overclocks and static blue RGB on startup
 │   │   │       └── wireguard.service       ## Connects to a random VPN config on startup
-│   │   ├── mkinitcpio.conf                 ## The minimum hooks required to boot my custom kernel
+│   │   ├── mkinitcpio.conf                 ## The minimum hooks required to boot the custom kernel
 │   │   ├── nftables.conf                   ## Strict default-deny firewall rules
 │   │   └── pacman.conf                     ## Adds CachyOS repos for the extra optimization
 │   ├── home
@@ -84,7 +77,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   ├── usr
 │   │   └── local
 │   │       └── bin
-│   │           └── overclock               ## Ran by overclock.service to set my NVIDIA overclocks via NVML
+│   │           └── overclock               ## Ran by overclock.service to set overclocks via NVML
 │   └── var
 │       └── lib
 │           └── private
@@ -99,10 +92,10 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 
 Quite literally just:
 
-1. Boot into an Arch ISO
-2. `pacman-key --init && pacman -Sy git`
+1. Boot into an Arch ISO and connect to the internet
+2. `pacman -Sy git`
 3. `git clone https://zenixark.com/projects/zenixarch.git`
-4. `DISK=<disk, like nvme0n1> PASS=<a strong pass> ./*/z*`
+4. `DISK='<disk, like nvme0n1>' PASS='<a strong pass>' ./*/z*`
 5. `reboot`
 
 This is the only right way to install this setup... If you're stupid enough to clone this repo and run it unchanged on an existing install, welp your installation is in the hands of God now. :)

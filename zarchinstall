@@ -5,25 +5,69 @@ set -euo pipefail
 
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+export PACKAGES=(
+    adguardhome
+    base
+    btrfs-progs
+    cachyos-keyring
+    cachyos-mirrorlist
+    cachyos-v3-mirrorlist
+    foot
+    git
+    grimblast-git
+    hyprland
+    hyprpaper
+    hyprpicker
+    intel-ucode
+    iptables-nft
+    iwd
+    linux-firmware-intel
+    neovim
+    noto-fonts
+    noto-fonts-emoji
+    pass-otp
+    pipewire-pulse
+    sbctl
+    signal-desktop
+    ttf-nerd-fonts-symbols
+    ungoogled-chromium-bin
+    wireguard-tools
+    wl-clipboard
+)
+
+export SERVICES=(
+    adguardhome.service
+    getty@.service
+    iwd.service
+    nftables.service
+    misc.service
+    systemd-timesyncd.service
+    wireguard.service
+)
+
+export TIMERS=(
+    btrfs-scrub@-.timer
+    fstrim.timer
+)
+
 configuration() {
     find "$SCRIPTDIR"/rootfs -type f | while read -r src; do
         cmp -s "$src" /"${src#"$SCRIPTDIR"/rootfs/}" || install -Dm644 "$src" /"${src#"$SCRIPTDIR"/rootfs/}"
     done
 
-    pacman -S --noconfirm --needed - < "$SCRIPTDIR"/lists/packages.txt
+    pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
     "$SCRIPTDIR"/misc/extras.sh
 
-    while read -r svc; do
+    for svc in "${SERVICES[@]}"; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
-    done < "$SCRIPTDIR"/lists/services.txt
-
-    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        grep -qx "$svc" "$SCRIPTDIR"/lists/services.txt || systemctl disable $NOW "$svc"
     done
 
-    # shellcheck disable=2046
-    systemctl enable $(cat "$SCRIPTDIR"/lists/timers.txt)
+    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
+        [[ "${SERVICES[*]}" =~ $svc ]] || systemctl disable $NOW "$svc"
+    done
+
+    systemctl enable "${TIMERS[@]}"
     systemctl mask systemd-boot-random-seed.service
 
     for d in .cache .local; do
@@ -93,7 +137,7 @@ if [[ -d /run/archiso ]]; then
     curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
     (cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt - < "$SCRIPTDIR"/lists/packages.txt
+    pacstrap /mnt "${PACKAGES[@]}"
 
     genfstab -U /mnt >> /mnt/etc/fstab
 

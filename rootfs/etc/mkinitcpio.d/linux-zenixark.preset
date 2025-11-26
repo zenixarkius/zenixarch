@@ -1,5 +1,5 @@
 ALL_config="/etc/mkinitcpio.conf"
-ALL_kver="/usr/lib/modules/$(pacman -Qi linux-zenixark | grep Version | awk '{print $3}')-zenixark/vmlinuz"
+ALL_kver="/usr/lib/modules/$(pacman -Qi linux-zenixark | awk '/Version/ {print $3}')-zenixark/vmlinuz"
 PRESETS=('default')
 default_uki="/boot/EFI/BOOT/BOOTX64.EFI"
 default_options="--cmdline /dev/null"

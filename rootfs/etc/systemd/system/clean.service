@@ -1,5 +1,0 @@
-[Unit]
-Description=Flush pacman cache and systemd journals
-
-[Service]
-ExecStart=/bin/bash -c 'yes | pacman -Scc; journalctl --rotate; journalctl --vacuum-time=1s'

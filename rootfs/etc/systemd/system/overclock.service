@@ -1,8 +1,0 @@
-[Unit]
-Description=Set NVIDIA overclocks
-
-[Service]
-ExecStart=/usr/local/bin/overclock
-
-[Install]
-WantedBy=multi-user.target

@@ -1,3 +1,0 @@
-btrfs-scrub@-.timer
-clean.timer
-fstrim.timer

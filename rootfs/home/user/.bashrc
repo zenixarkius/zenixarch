@@ -28,9 +28,13 @@ alias diff='diff --color=always'
 
 alias orphans='sudo bash -c "pacman -Rcns \$(pacman -Qttdq); pacman -Runs \$(pacman -Qqd)"'
 alias prune='tac ~/.bash_history | awk "!seen[\$0]++" | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
+alias paccache='sudo bash -c "yes | pacman -Scc"'
+alias logrotate='sudo bash -c "journalctl --rotate && journalctl --vacuum-time=1s"'
 
 alias mssd='sudo bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
 alias ussd='sudo bash -c "umount -R /mnt && cryptsetup close cryptext"'
+
+alias rsize='sudo du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'
 
 cd() { builtin cd "$@" && ls; }
 
