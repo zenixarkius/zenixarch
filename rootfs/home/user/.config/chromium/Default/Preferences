@@ -1,0 +1,283 @@
+{
+  "auto_pin_new_tab_groups": false,
+  "bookmark_bar": {
+    "show_on_all_tabs": false,
+    "show_tab_groups": false
+  },
+  "browser": {
+    "custom_chrome_frame": false,
+    "window_placement": {}
+  },
+  "default_apps_install_state": 3,
+  "default_search_provider": {
+    "guid": "a9c88744-0ca8-425e-8aee-6eb0fc54889b"
+  },
+  "default_search_provider_data": {
+    "mirrored_template_url_data": {
+      "alternate_urls": [],
+      "created_from_play_api": false,
+      "enforced_by_policy": false,
+      "favicon_url": "https://www.startpage.com/sp/cdn/favicons/favicon-32x32-gradient.png",
+      "featured_by_policy": false,
+      "id": "13",
+      "input_encodings": [
+        "UTF-8"
+      ],
+      "is_active": 1,
+      "keyword": "startpage.com",
+      "originating_url": "https://www.startpage.com/sp/cdn/opensearch/en/opensearch.xml",
+      "policy_origin": 0,
+      "preconnect_to_search_url": false,
+      "prefetch_likely_navigations": false,
+      "prepopulate_id": 0,
+      "safe_for_autoreplace": false,
+      "search_intent_params": [],
+      "short_name": "Startpage",
+      "starter_pack_id": 0,
+      "suggestions_url": "https://www.startpage.com/osuggestions?q={searchTerms}",
+      "synced_guid": "a9c88744-0ca8-425e-8aee-6eb0fc54889b",
+      "url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=english",
+      "usage_count": 0
+    },
+    "template_url_data": {
+      "alternate_urls": [],
+      "created_from_play_api": false,
+      "enforced_by_policy": false,
+      "favicon_url": "https://www.startpage.com/sp/cdn/favicons/favicon-32x32-gradient.png",
+      "featured_by_policy": false,
+      "id": "13",
+      "input_encodings": [
+        "UTF-8"
+      ],
+      "is_active": 1,
+      "keyword": "startpage.com",
+      "originating_url": "https://www.startpage.com/sp/cdn/opensearch/en/opensearch.xml",
+      "policy_origin": 0,
+      "preconnect_to_search_url": false,
+      "prefetch_likely_navigations": false,
+      "prepopulate_id": 0,
+      "safe_for_autoreplace": false,
+      "search_intent_params": [],
+      "short_name": "Startpage",
+      "starter_pack_id": 0,
+      "suggestions_url": "https://www.startpage.com/osuggestions?q={searchTerms}",
+      "synced_guid": "a9c88744-0ca8-425e-8aee-6eb0fc54889b",
+      "url": "https://www.startpage.com/sp/search?query={searchTerms}&cat=web&pl=opensearch&language=english",
+      "usage_count": 0
+    }
+  },
+  "download": {
+    "default_directory": "/home/user"
+  },
+  "extensions": {
+    "alerts": {},
+    "chrome_url_overrides": {},
+    "commands": {},
+    "global_shortcuts": {},
+    "pinned_extensions": [
+      "ffdcniofnmcloemhhmgjejdenikneddl"
+    ],
+    "settings": {
+      "ffdcniofnmcloemhhmgjejdenikneddl": {
+        "account_extension_type": 0,
+        "active_permissions": {
+          "api": [
+            "alarms",
+            "contextMenus",
+            "privacy",
+            "storage",
+            "tabs",
+            "unlimitedStorage",
+            "webNavigation",
+            "webRequest",
+            "webRequestBlocking"
+          ],
+          "explicit_host": [
+            "<all_urls>",
+            "chrome://favicon/*"
+          ],
+          "manifest_permissions": [],
+          "scriptable_host": [
+            "http://*/*",
+            "https://*.fanboy.co.nz/*",
+            "https://*.github.io/*",
+            "https://*.reddit.com/r/uBlockOrigin/*",
+            "https://*/*",
+            "https://easylist.to/*",
+            "https://filterlists.com/*",
+            "https://forums.lanik.us/*",
+            "https://github.com/*",
+            "https://github.com/uBlockOrigin/*",
+            "https://ublockorigin.github.io/*"
+          ]
+        },
+        "commands": {
+          "launch-element-picker": {
+            "was_assigned": true
+          },
+          "launch-element-zapper": {
+            "was_assigned": true
+          },
+          "launch-logger": {
+            "was_assigned": true
+          },
+          "open-dashboard": {
+            "was_assigned": true
+          },
+          "relax-blocking-mode": {
+            "was_assigned": true
+          },
+          "toggle-cosmetic-filtering": {
+            "was_assigned": true
+          },
+          "toggle-javascript": {
+            "was_assigned": true
+          }
+        },
+        "content_settings": [],
+        "creation_flags": 34,
+        "events": [],
+        "from_webstore": false,
+        "granted_permissions": {
+          "api": [
+            "alarms",
+            "contextMenus",
+            "privacy",
+            "storage",
+            "tabs",
+            "unlimitedStorage",
+            "webNavigation",
+            "webRequest",
+            "webRequestBlocking"
+          ],
+          "explicit_host": [
+            "<all_urls>",
+            "chrome://favicon/*"
+          ],
+          "manifest_permissions": [],
+          "scriptable_host": [
+            "http://*/*",
+            "https://*.fanboy.co.nz/*",
+            "https://*.github.io/*",
+            "https://*.reddit.com/r/uBlockOrigin/*",
+            "https://*/*",
+            "https://easylist.to/*",
+            "https://filterlists.com/*",
+            "https://forums.lanik.us/*",
+            "https://github.com/*",
+            "https://github.com/uBlockOrigin/*",
+            "https://ublockorigin.github.io/*"
+          ]
+        },
+        "incognito": true,
+        "incognito_content_settings": [],
+        "incognito_preferences": {},
+        "location": 4,
+        "newAllowFileAccess": false,
+        "path": "/usr/local/share/uBlock0.chromium",
+        "preferences": {
+          "enable_a_ping": false,
+          "net.network_prediction_options": 2
+        },
+        "regular_only_preferences": {},
+        "store_extension_errors": 0,
+        "was_installed_by_default": false,
+        "was_installed_by_oem": false,
+        "withholding_permissions": false
+      },
+      "mhjfbmdgcfjbbpaeojofohoefgiehjai": {
+        "account_extension_type": 0,
+        "active_permissions": {
+          "api": [
+            "contentSettings",
+            "fileSystem",
+            "fileSystem.write",
+            "metricsPrivate",
+            "tabs",
+            "resourcesPrivate",
+            "pdfViewerPrivate"
+          ],
+          "explicit_host": [
+            "chrome://resources/*",
+            "chrome://webui-test/*"
+          ],
+          "manifest_permissions": [],
+          "scriptable_host": []
+        },
+        "commands": {},
+        "content_settings": [],
+        "creation_flags": 1,
+        "disable_reasons": [],
+        "events": [],
+        "from_webstore": false,
+        "incognito_content_settings": [],
+        "incognito_preferences": {},
+        "location": 5,
+        "manifest": {
+          "content_security_policy": "script-src 'self' blob: filesystem: chrome://resources chrome://webui-test; object-src * blob: externalfile: file: filesystem: data:",
+          "incognito": "split",
+          "key": "MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDN6hM0rsDYGbzQPQfOygqlRtQgKUXMfnSjhIBL7LnReAVBEd7ZmKtyN2qmSasMl4HZpMhVe2rPWVVwBDl6iyNE/Kok6E6v6V3vCLGsOpQAuuNVye/3QxzIldzG/jQAdWZiyXReRVapOhZtLjGfywCvlWq7Sl/e3sbc0vWybSDI2QIDAQAB",
+          "manifest_version": 2,
+          "mime_types": [
+            "application/pdf"
+          ],
+          "mime_types_handler": "index.html",
+          "name": "Chromium PDF Viewer",
+          "offline_enabled": true,
+          "permissions": [
+            "chrome://resources/",
+            "chrome://webui-test/",
+            "contentSettings",
+            "metricsPrivate",
+            "pdfViewerPrivate",
+            "resourcesPrivate",
+            "tabs",
+            {
+              "fileSystem": [
+                "write"
+              ]
+            }
+          ],
+          "version": "1",
+          "web_accessible_resources": [
+            "pdf_embedder.css"
+          ]
+        },
+        "path": "/usr/lib/chromium/resources/pdf",
+        "preferences": {},
+        "regular_only_preferences": {},
+        "was_installed_by_default": false,
+        "was_installed_by_oem": false
+      }
+    },
+    "ui": {
+      "developer_mode": true
+    }
+  },
+  "https_first_balanced_mode_enabled": false,
+  "https_only_mode_auto_enabled": false,
+  "https_only_mode_enabled": true,
+  "migrated_user_scripts_toggle": true,
+  "profile": {
+    "avatar_index": 26,
+    "background_password_check": {},
+    "content_settings": {},
+    "default_content_setting_values": {
+      "cookies": 4
+    },
+    "last_time_obsolete_http_credentials_removed": 0,
+    "last_time_password_store_metrics_reported": 0,
+    "managed": {},
+    "name": "Your Chromium",
+    "password_hash_data_list": [],
+    "safety_hub_menu_notifications": {},
+    "were_old_google_logins_removed": true
+  },
+  "saved_tab_groups": {
+    "did_enable_shared_tab_groups_in_last_session": false,
+    "specifics_to_data_migration": true
+  },
+  "savefile": {
+    "default_directory": "/home/user"
+  }
+}

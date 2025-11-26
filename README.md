@@ -10,9 +10,9 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
                  .o+`                    -------------
                 `ooo/                    OS: Arch Linux x86_64
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
-              `+oooooo:                  Kernel: Linux 6.17.8-1-zenixark
+              `+oooooo:                  Kernel: Linux 6.17.9-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
-            `/:-:++oooo+:                Packages: 411 (pacman)
+            `/:-:++oooo+:                Packages: 376 (pacman)
            `/++++/+++++++:               Shell: bash 5.3.3
           `/++++++++++++++:              Display (M34WQ): 3440x1440 in 34", 144 Hz [External]
          `/+++ooooooooooooo/`            Display (LG ULTRAGEAR): 1920x1080 in 24", 144 Hz [External]
@@ -24,7 +24,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
   `/ossssso+/:-        -:/+osssso+-      GPU 1: NVIDIA GeForce RTX 4070 [Discrete]
  `+sso+:-`                 `.-/+oso:     GPU 2: Intel UHD Graphics 770 @ 1.60 GHz [Integrated]
 `++:.                           `-/+/    Memory: 1.45 GiB / 31.11 GiB (5%)
-.`                                 `/    Disk (/): 2.29 GiB / 931.00 GiB (0%) - btrfs
+.`                                 `/    Disk (/): 2.22 GiB / 931.00 GiB (0%) - btrfs
 ```
 
 ## Repo Layout
@@ -41,6 +41,10 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   ├── packages.txt                        ## Declarative list of pacman packages
 │   ├── services.txt                        ## Declarative list of systemd services
 │   └── timers.txt                          ## Declarative list of systemd timers
+├── misc
+│   ├── extras.sh                           ## Some minor patches and non-standard package handling
+│   ├── overclock.c                         ## Source of the overclock binary
+│   └── ublock.json                         ## An absurdly strict uBo config, this has to be manually imported
 ├── rootfs
 │   ├── etc
 │   │   ├── iwd
@@ -58,10 +62,14 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │   │       └── wireguard.service       ## Connects to a random VPN config on startup
 │   │   ├── mkinitcpio.conf                 ## The minimum hooks required to boot my custom kernel
 │   │   ├── nftables.conf                   ## Strict default-deny firewall rules
-│   │   └── pacman.conf                     ## Adds CachyOS repos for the extra optimization (and librewolf)
+│   │   └── pacman.conf                     ## Adds CachyOS repos for the extra optimization
 │   ├── home
 │   │   └── user
 │   │       ├── .config
+│   │       │   ├── chromium
+│   │       │   │   ├── Default
+│   │       │   │   │   └── Preferences     ## Configuration for ungoogled chromium
+│   │       │   │   └── Local State         ## Flags for ungoogled chromium
 │   │       │   ├── hypr
 │   │       │   │   ├── hyprland.conf       ## Mostly stock minus some minor aesthetic changes
 │   │       │   │   ├── hyprpaper.conf      ## Applies the 2 wallpapers below
@@ -70,11 +78,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │       │   └── nvim
 │   │       │       ├── init.lua            ## Lazy plugins setup + useful options
 │   │       │       └── lazy-lock.json
-│   │       ├── .librewolf
-│   │       │   ├── user
-│   │       │   │   └── user.js             ## Extra ui, performance, and hardening tweaks over librewolf's defaults
-│   │       │   ├── installs.ini
-│   │       │   └── profiles.ini
 │   │       ├── .bash_profile               ## Autostart Hyprland
 │   │       ├── .bashrc                     ## Some useful aliases for system maintenance
 │   │       └── .gitconfig
@@ -87,9 +90,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │           └── private
 │               └── adguardhome
 │                   └── AdGuardHome.yaml    ## A REALLY heavy handed DNS sinkhole config
-├── utils
-│   ├── bugfixes.sh                         ## Some minor patches for random things
-│   └── overclock.c                         ## Source of the overclock binary
 └── zarchinstall                            ## The backbone of this project, it can do a full disk install from
                                             ## a live ISO and be ran over and over again post-install to
                                             ## idempotently reapply the repo's state

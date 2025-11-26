@@ -57,8 +57,8 @@ filters=(
     /home/user/.gitconfig
     /home/user/.gnupg
     /home/user/.password-store
-    /home/user/.librewolf
     /home/user/.local
+    /home/user/.config/chromium
     /home/user/.config/dconf
     /home/user/.config/hypr
     /home/user/.config/gtk-3.0
@@ -117,10 +117,8 @@ filters=(
     /etc/localtime
     /etc/login.defs
     /etc/machine-id
-    /etc/mailcap
     /etc/makepkg.conf
     /etc/makepkg.conf.d
-    /etc/mime.types
     /etc/mke2fs.conf
     /etc/mkinitcpio.conf
     /etc/mkinitcpio.d
@@ -128,7 +126,6 @@ filters=(
     /etc/mtab
     /etc/netconfig
     /etc/nftables.conf
-    /etc/nginx
     /etc/nsswitch.conf
     /etc/nvidia
     /etc/openldap
@@ -147,8 +144,6 @@ filters=(
     /etc/protocols
     /etc/pulse
     /etc/.pwd.lock
-    /etc/rc_keymaps
-    /etc/rc_maps.cfg
     /etc/request-key.conf
     /etc/resolv.conf
     /etc/rpc
@@ -173,7 +168,6 @@ filters=(
     /etc/.updated
     /etc/userdb
     /etc/vconsole.conf
-    /etc/vdpau_wrapper.cfg
     /etc/wireguard
     /etc/X11
     /etc/xattr.conf

@@ -12,7 +12,7 @@ configuration() {
 
     pacman -S --noconfirm --needed - < "$SCRIPTDIR"/lists/packages.txt
 
-    "$SCRIPTDIR"/utils/bugfixes.sh
+    "$SCRIPTDIR"/misc/extras.sh
 
     while read -r svc; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
