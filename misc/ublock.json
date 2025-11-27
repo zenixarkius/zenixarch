@@ -1,5 +1,5 @@
 {
-  "timeStamp": 1764107022638,
+  "timeStamp": 1764258248722,
   "version": "1.67.0",
   "userSettings": {
     "advancedUserEnabled": true,
@@ -23,7 +23,8 @@
       "https://www.github.developerdan.com/hosts/lists/facebook-extended.txt",
       "https://www.github.developerdan.com/hosts/lists/tracking-aggressive-extended.txt"
     ],
-    "popupPanelSections": 31
+    "popupPanelSections": 31,
+    "suspendUntilListsAreLoaded": true
   },
   "selectedFilterLists": [
     "ublock-filters",
@@ -80,7 +81,7 @@
     "moz-extension-scheme",
     "zenixark.com"
   ],
-  "dynamicFilteringString": "* * inline-script block\n* * 1p-script block\n* * 3p-script block\n* * 3p-frame block\n* * 3p block\nold.reddit.com * 3p noop\ngithub.com * 3p-script noop\ngithub.com * 3p noop",
+  "dynamicFilteringString": "* * inline-script block\n* * 1p-script block\n* * 3p-script block\n* * 3p-frame block\n* * 3p block\ngithub.com * 3p-script noop\ngithub.com * 3p noop\nreddit.com * 3p noop",
   "urlFilteringString": "* https://challenges.cloudflare.com * noop",
   "hostnameSwitchesString": "no-remote-fonts: * true\nno-csp-reports: * true\nno-scripting: * true\nno-scripting: github.com false",
   "userFilters": ""

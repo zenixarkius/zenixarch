@@ -21,16 +21,16 @@ export PACKAGES=(
     intel-ucode
     iptables-nft
     iwd
+    librewolf-bin
     linux-firmware-intel
     neovim
     noto-fonts
-    noto-fonts-emoji
     pass-otp
+    pipewire-jack
     pipewire-pulse
     sbctl
     signal-desktop
     ttf-nerd-fonts-symbols
-    ungoogled-chromium-bin
     wireguard-tools
     wl-clipboard
 )

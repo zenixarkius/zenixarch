@@ -38,7 +38,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │                                       ## driver EXCEPT the bare minimum required for my desktop to work
 │   └── PKGBUILD                            ## Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
-│   ├── extras.sh                           ## Some minor patches and non-standard package handling
+│   ├── hotfixes.sh                         ## Some fixes for bugs in other software
 │   ├── overclock.c                         ## Source of the overclock binary
 │   └── ublock.json                         ## A REALLY heavy handed uBlock config, this has to be manually imported
 ├── rootfs
@@ -59,10 +59,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   ├── home
 │   │   └── user
 │   │       ├── .config
-│   │       │   ├── chromium
-│   │       │   │   ├── Default
-│   │       │   │   │   └── Preferences     ## Configuration for ungoogled chromium
-│   │       │   │   └── Local State         ## Flags for ungoogled chromium
 │   │       │   ├── hypr
 │   │       │   │   ├── hyprland.conf       ## Mostly stock minus some minor aesthetic changes
 │   │       │   │   ├── hyprpaper.conf      ## Applies the 2 wallpapers below
@@ -71,6 +67,11 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │       │   └── nvim
 │   │       │       ├── init.lua            ## Lazy plugins setup + useful options
 │   │       │       └── lazy-lock.json
+│   │       ├── .librewolf
+│   │       │   ├── user
+│   │       │   │   └── user.js             ## Extra ui, performance, and hardening tweaks over librewolf's defaults
+│   │       │   ├── installs.ini
+│   │       │   └── profiles.ini
 │   │       ├── .bash_profile               ## Autostart Hyprland
 │   │       ├── .bashrc                     ## Some useful aliases for system maintenance
 │   │       └── .gitconfig
