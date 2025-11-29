@@ -57,7 +57,7 @@ configuration() {
 
     pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-    "$SCRIPTDIR"/misc/extras.sh
+    "$SCRIPTDIR"/misc/hotfixes.sh
 
     for svc in "${SERVICES[@]}"; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"

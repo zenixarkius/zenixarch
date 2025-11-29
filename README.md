@@ -12,7 +12,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
               `+oooooo:                  Kernel: Linux 6.17.9-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
-            `/:-:++oooo+:                Packages: 376 (pacman)
+            `/:-:++oooo+:                Packages: 411 (pacman)
            `/++++/+++++++:               Shell: bash 5.3.3
           `/++++++++++++++:              Display (M34WQ): 3440x1440 in 34", 144 Hz [External]
          `/+++ooooooooooooo/`            Display (LG ULTRAGEAR): 1920x1080 in 24", 144 Hz [External]

@@ -9,5 +9,3 @@
 	editor = nvim
 [color]
 	ui = always
-[credential]
-	helper = store --file=/tmp/git-credentials
