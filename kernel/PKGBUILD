@@ -6,6 +6,8 @@ depends=(coreutils initramfs kmod libglvnd nvidia-utils=$nvver)
 makedepends=(bc clang lld llvm perl python)
 arch=(x86_64) options=(!strip) pkgrel=1
 
+flags=(CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1)
+
 source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-$pkgver.tar.xz
         https://us.download.nvidia.com/XFree86/Linux-x86_64/$nvver/NVIDIA-Linux-x86_64-$nvver.run
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/all/0001-cachyos-base-all.patch
@@ -28,10 +30,12 @@ prepare() {
     echo -$pkgrel > localversion.10-pkgrel
     echo ${pkgname#linux} > localversion.20-pkgname
 
-    for src in "${source[@]}"; do [[ $src = *.patch* ]] && patch -Np1 $([[ $src = *nvidia* ]] && echo "-d $srcdir/NVIDIA-Linux-x86_64-$nvver/kernel") < ../${src##*/}; done
+    for src in "${source[@]}"; do
+        [[ $src = *.patch* ]] && patch -Np1 $([[ $src = *nvidia* ]] && echo "-d $srcdir/NVIDIA-Linux-x86_64-$nvver/kernel") < ../${src##*/}
+    done
 
     cp ../config .config
-    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 olddefconfig
+    make "${flags[@]}" olddefconfig
     diff --color=always ../config .config || read -p "Press enter to confirm"
 
     make -s kernelrelease > version
@@ -39,10 +43,10 @@ prepare() {
 
 build() {
     cd linux-$pkgver
-    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 -j$(nproc) all
+    make "${flags[@]}" -j$(nproc) all
 
     cd $srcdir/NVIDIA-Linux-x86_64-$nvver/kernel
-    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 KERNEL_UNAME=$pkgver-${pkgname#linux-} SYSSRC=$srcdir/linux-$pkgver SYSOUT=$srcdir/linux-$pkgver NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j$(nproc) modules
+    make "${flags[@]}" KERNEL_UNAME=$pkgver-${pkgname#linux-} SYSSRC=$srcdir/linux-$pkgver SYSOUT=$srcdir/linux-$pkgver NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j$(nproc) modules
 }
 
 package() {
@@ -55,6 +59,6 @@ package() {
     install -Dm644 $srcdir/NVIDIA-Linux-x86_64-$nvver/kernel/*.ko $modulesdir
     find $modulesdir -name '*.ko' -print -exec llvm-strip --strip-debug {} \; -exec scripts/sign-file sha512 certs/signing_key.pem certs/signing_key.x509 {} \; -exec zstd --rm -19 -T0 {} +
 
-    ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH=$pkgdir/usr INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist  modules_install
+    ZSTD_CLEVEL=19 make "${flags[@]}" INSTALL_MOD_PATH=$pkgdir/usr INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
     rm $modulesdir/build
 }

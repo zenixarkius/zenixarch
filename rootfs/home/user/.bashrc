@@ -36,31 +36,14 @@ alias ussd='sudo bash -c "umount -R /mnt && cryptsetup close cryptext"'
 
 alias rsize='sudo du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'
 
-cd() {
-    builtin cd "$@" && ls
-}
+alias lo='find ~{,/.config} /etc /var/{lib,cache,log} -maxdepth 1 | while read -r lo; do [[ "${filters[*]}" =~ $lo ]] || du -sh "$lo" 2> /dev/null; done'
+alias lop='for f in "${filters[@]}"; do [[ -e $f ]] || echo "$f"; done'
 
-search() {
-    sudo find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print
-}
+cd() { builtin cd "$@" && ls; }
 
-sudo() {
-    su -p -c "$(printf '%q ' "$@")"
-}
+search() { sudo find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print; }
 
-leftovers() {
-    case "$1" in
-        -p)
-            for f in "${filters[@]}"; do
-                [[ -e $f ]] || echo "$f"
-            done ;;
-        *)
-            find ~{,/.config} /etc /var/{lib,cache,log} -maxdepth 1 | while read -r lo; do
-                [[ "${filters[*]}" =~ $lo ]] || du -sh "$lo" 2> /dev/null
-            done ;;
-    esac
-}
-
+sudo() { su -p -c "$(printf '%q ' "$@")"; }
 
 filters=(
     /home/user/.bash_logout
@@ -74,11 +57,13 @@ filters=(
     /home/user/.password-store
     /home/user/.librewolf
     /home/user/.local
+
     /home/user/.config/dconf
     /home/user/.config/hypr
     /home/user/.config/gtk-3.0
     /home/user/.config/nvim
     /home/user/.config/Signal
+
     /etc/adjtime
     /etc/alsa
     /etc/arch-release
@@ -193,9 +178,11 @@ filters=(
     /etc/X11
     /etc/xattr.conf
     /etc/xdg
+
     /var/cache/fontconfig
     /var/cache/ldconfig
     /var/cache/private
+
     /var/lib/dbus
     /var/lib/iwd
     /var/lib/krb5kdc
@@ -210,6 +197,7 @@ filters=(
     /var/lib/systemd
     /var/lib/tpm2-tss
     /var/lib/xkb
+
     /var/log/audit
     /var/log/btmp
     /var/log/lastlog
