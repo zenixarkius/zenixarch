@@ -52,12 +52,25 @@ export TIMERS=(
 
 configuration() {
     find "$SCRIPTDIR"/rootfs -type f | while read -r src; do
-        cmp -s "$src" /"${src#"$SCRIPTDIR"/rootfs/}" || install -Dm644 "$src" /"${src#"$SCRIPTDIR"/rootfs/}"
+        ARGS=(-Dm644)
+        [[ "$src" =~ AdGuardHome ]] && ARGS=(-Dm600 -o nobody -g nobody)
+        [[ "$src" =~ /home/user ]] && ARGS=(-Dm644 -o user -g user)
+        [[ "$src" =~ /usr/local/bin ]] && ARGS=(-Dm755)
+        cmp -s "$src" /"${src#"$SCRIPTDIR"/rootfs/}" || install "${ARGS[@]}" "$src" /"${src#"$SCRIPTDIR"/rootfs/}"
     done
 
     pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-    "$SCRIPTDIR"/misc/hotfixes.sh
+    if ! [[ $(pacman -Q openrgb | awk '{print $2}') = '1.0rc1-2' ]]; then
+        (cd /tmp # Openrgb is completely broken for me after this version
+        curl -OJ https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
+        pacman -U --noconfirm openrgb*.zst)
+    fi
+
+    diff --color=always <(pacman -Qqe) <(printf '%s\n' "${PACKAGES[@]}") || :
+
+    sed -i "s|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|" /etc/pulse/client.conf # Fix Steam creating ~/.pulse-cookie
+    sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash # Fix `which` not found by pass otp
 
     for svc in "${SERVICES[@]}"; do
         systemctl is-enabled -q "$svc" || systemctl enable $NOW "$svc"
@@ -70,21 +83,18 @@ configuration() {
     systemctl enable "${TIMERS[@]}"
     systemctl mask systemd-boot-random-seed.service
 
-    for d in .cache .local; do
-        [[ $(readlink /home/user/$d) == /tmp ]] || ln -sfn /tmp /home/user/$d
+    for d in /home/user/.{cache,local}; do
+        [[ $(readlink "$d") == /tmp ]] || { ln -sfn /tmp "$d" && chown user:user "$d"; }
     done
-
-    chmod 600 /var/lib/private/adguardhome/AdGuardHome.yaml
-    chown -R nobody:nobody /var/lib/private/adguardhome
-    chown -R user:user /home/user
-    chmod +x /usr/local/bin/*
 
     mkinitcpio -P || :
 
-    if sbctl status | grep -q "Setup Mode:.*Enabled"; then
+    if sbctl status | grep -q "Setup Mode:.*Enabled" && [[ -e /dev/tpm0 ]]; then
         sbctl create-keys
         sbctl enroll-keys --tpm-eventlog
         sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+    else
+        echo Skipping Secure Boot setup as it is not in Setup Mode or no TPM detected
     fi
 }
 
@@ -98,7 +108,7 @@ if [[ -d /run/archiso ]]; then
     umount -R /mnt &> /dev/null || :
     cryptsetup close cryptroot &> /dev/null || :
 
-    [[ "$DISK" =~ nvme ]] && { nvme id-ns -H /dev/"$DISK" | grep -q "LBA Format  1.*Data Size: 4096"; } && nvme format --lbaf=1 --force /dev/"$DISK"
+    [[ "$DISK" =~ nvme ]] && { nvme id-ns -H /dev/"$DISK" | grep -q "1.*4096"; } && nvme format --lbaf=1 --force /dev/"$DISK"
 
     sgdisk --zap-all /dev/"$DISK"
     sgdisk -g /dev/"$DISK"
@@ -141,25 +151,34 @@ if [[ -d /run/archiso ]]; then
 
     genfstab -U /mnt >> /mnt/etc/fstab
 
-    echo LANG=en_US.UTF-8 > /mnt/etc/locale.conf
-    echo en_US.UTF-8 UTF-8 > /mnt/etc/locale.gen
-
-    ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
-
-    arch-chroot /mnt bash -ec "hwclock --systohc; locale-gen; useradd -m user; chpasswd <<< root:$PASS"
+    useradd -R /mnt -m user
+    chpasswd -R /mnt <<< "root:$PASS"
 
     cp -r "$SCRIPTDIR" /mnt/home/user/.zenixarch/
 
-    pacstrap /mnt base-devel
-    echo "user ALL=(ALL) NOPASSWD: ALL" > /mnt/etc/sudoers.d/00_user
-    sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" /mnt/home/user/.zenixarch/kernel/config
+    arch-chroot /mnt NOW='' SCRIPTDIR=/home/user/.zenixarch bash -e << CHROOT
+        $(declare -f configuration)
 
-    arch-chroot /mnt bash -ec "cd /home/user/.zenixarch/kernel; sudo -u user makepkg -si --noconfirm; pacman -Rcns --noconfirm base-devel"
+        echo LANG=en_US.UTF-8 > /etc/locale.conf
+        echo en_US.UTF-8 UTF-8 > /etc/locale.gen
+        locale-gen
 
-    rm -rf /mnt/{boot/*,etc/sudoers.d,home/user/.zenixarch/kernel/{src,pkg,*.*}}
-    mkdir -p /mnt/boot/EFI/BOOT
+        ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
+        hwclock --systohc
 
-    arch-chroot /mnt bash -ec "$(declare -f configuration); NOW='' SCRIPTDIR=/home/user/.zenixarch configuration"
+        pacman -S --noconfirm base-devel
+        echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
+
+        (cd \$SCRIPTDIR/kernel
+        sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" config
+        sudo -u user makepkg -si --noconfirm
+
+        pacman -Rcns --noconfirm base-devel
+        rm -rf /boot/* /etc/sudoers.d src pkg *.{patch,xz,run})
+        mkdir -p /boot/EFI/BOOT
+
+        configuration
+CHROOT
 else
     NOW=--now configuration
 fi

@@ -38,7 +38,6 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 │   │                                       ## driver EXCEPT the bare minimum required for my desktop to work
 │   └── PKGBUILD                            ## Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
-│   ├── hotfixes.sh                         ## Some fixes for bugs in other software
 │   ├── overclock.c                         ## Source of the overclock binary
 │   └── ublock.json                         ## A REALLY heavy handed uBlock config, this has to be manually imported
 ├── rootfs
@@ -99,7 +98,7 @@ Quite literally just:
 4. `DISK='<disk, like nvme0n1>' PASS='<a strong pass>' ./*/z*`
 5. `reboot`
 
-This is the only right way to install this setup... If you're stupid enough to clone this repo and run it unchanged on an existing install, welp your installation is in the hands of God now. :)
+This is the only right way to install this setup... If you clone this repo and run it unchanged on an existing install, your installation is in the hands of God now. :)
 
 ---
 
