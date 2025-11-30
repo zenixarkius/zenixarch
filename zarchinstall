@@ -22,7 +22,6 @@ export PACKAGES=(
     iptables-nft
     iwd
     librewolf-bin
-    linux-firmware-intel
     neovim
     noto-fonts
     pass-otp

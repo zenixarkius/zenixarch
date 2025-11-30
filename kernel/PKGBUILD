@@ -6,13 +6,12 @@ depends=(coreutils initramfs kmod libglvnd nvidia-utils=$nvver)
 makedepends=(bc clang lld llvm perl python)
 arch=(x86_64) options=(!strip) pkgrel=1
 
-flags=(CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1)
-
 source=(https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-$pkgver.tar.xz
         https://us.download.nvidia.com/XFree86/Linux-x86_64/$nvver/NVIDIA-Linux-x86_64-$nvver.run
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/all/0001-cachyos-base-all.patch
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore-cachy.patch
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
+        git+https://gitlab.com/kernel-firmware/linux-firmware.git
         config)
 
 sha256sums=('6d08803b953c509df48d44d3281ed392524321d8bb353eb21c0555790c8f8e06'
@@ -20,10 +19,13 @@ sha256sums=('6d08803b953c509df48d44d3281ed392524321d8bb353eb21c0555790c8f8e06'
             '3e6c31174af83818441611ba43936b620794c92530b17c933a3a5de45b03af48'
             'b7f52515927d1938f88b593141c4db65cf0827dfa3b4f2cf9f7bef493aa786c9'
             '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
+            'SKIP'
             'SKIP')
 
 prepare() {
     sh NVIDIA-Linux-x86_64-$nvver.run --extract-only
+
+    mv linux-firmware/intel/iwlwifi/* linux-firmware
 
     cd linux-$pkgver
 
@@ -35,7 +37,7 @@ prepare() {
     done
 
     cp ../config .config
-    make "${flags[@]}" olddefconfig
+    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 olddefconfig
     diff --color=always ../config .config || read -p "Press enter to confirm"
 
     make -s kernelrelease > version
@@ -43,10 +45,10 @@ prepare() {
 
 build() {
     cd linux-$pkgver
-    make "${flags[@]}" -j$(nproc) all
+    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 -j$(nproc) all
 
     cd $srcdir/NVIDIA-Linux-x86_64-$nvver/kernel
-    make "${flags[@]}" KERNEL_UNAME=$pkgver-${pkgname#linux-} SYSSRC=$srcdir/linux-$pkgver SYSOUT=$srcdir/linux-$pkgver NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j$(nproc) modules
+    make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 KERNEL_UNAME=$pkgver-${pkgname#linux-} SYSSRC=$srcdir/linux-$pkgver SYSOUT=$srcdir/linux-$pkgver NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j$(nproc) modules
 }
 
 package() {
@@ -59,6 +61,6 @@ package() {
     install -Dm644 $srcdir/NVIDIA-Linux-x86_64-$nvver/kernel/*.ko $modulesdir
     find $modulesdir -name '*.ko' -print -exec llvm-strip --strip-debug {} \; -exec scripts/sign-file sha512 certs/signing_key.pem certs/signing_key.x509 {} \; -exec zstd --rm -19 -T0 {} +
 
-    ZSTD_CLEVEL=19 make "${flags[@]}" INSTALL_MOD_PATH=$pkgdir/usr INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
+    ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH=$pkgdir/usr INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
     rm $modulesdir/build
 }
