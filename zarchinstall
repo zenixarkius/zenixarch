@@ -18,7 +18,6 @@ export PACKAGES=(
     hyprland
     hyprpaper
     hyprpicker
-    intel-ucode
     iptables-nft
     iwd
     librewolf-bin
