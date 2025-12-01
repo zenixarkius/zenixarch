@@ -31,7 +31,7 @@ NixOS and Ansible seem pretty cool... but the former is not Arch and the latter 
 ```pacmanconf
 .
 ├── kernel
-│   ├── config                              ## Uses the BORE scheduler, CachyOS patchsets, O3, ThinLTO, -march=native,
+│   ├── config                              ## Uses the BORE scheduler, CachyOS patchsets, O3, FullLTO, -march=native,
 │   │                                       ## and eventually AutoFDO and Propeller PGO. Sets BBR3 as the default TCP
 │   │                                       ## control, PREEMPT (low-latency desktop) on, 1000Hz timer, and other
 │   │                                       ## little things that count. Also strips EVERY unnecessary subsystem and
