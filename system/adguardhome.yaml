@@ -195,7 +195,6 @@ filters:
 whitelist_filters: []
 user_rules:
   - '@@||amazontrust.com^$important'
-  - '@@||cloudfront.net^$important'
   - '@@||ajax.googleapis.com^$important'
 dhcp:
   enabled: false
