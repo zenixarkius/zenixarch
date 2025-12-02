@@ -1,30 +1,24 @@
 {
-  "timeStamp": 1764258248722,
+  "timeStamp": 1764703529501,
   "version": "1.67.0",
   "userSettings": {
     "advancedUserEnabled": true,
     "contextMenuEnabled": false,
     "uiAccentCustom0": "#0077ce",
-    "externalLists": "https://filters.adtidy.org/windows/filters/15.txt\nhttps://github.com/nickspaargaren/no-google/raw/master/pihole-google.txt\nhttps://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/hosts/ultimate.txt\nhttps://gitlab.com/ookangzheng/dbl-oisd-nl/raw/master/dbl.txt\nhttps://hblock.molinero.dev/hosts\nhttps://raw.githubusercontent.com/StevenBlack/hosts/master/hosts\nhttps://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds.txt\nhttps://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/amazon/all\nhttps://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/apple/all\nhttps://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/facebook/all\nhttps://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/microsoft/all\nhttps://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt\nhttps://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt\nhttps://www.github.developerdan.com/hosts/lists/facebook-extended.txt\nhttps://www.github.developerdan.com/hosts/lists/tracking-aggressive-extended.txt",
+    "externalLists": "https://filters.adtidy.org/windows/filters/15.txt\nhttps://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/hosts/ultimate.txt\nhttps://gitlab.com/ookangzheng/dbl-oisd-nl/raw/master/dbl.txt\nhttps://hblock.molinero.dev/hosts\nhttps://raw.githubusercontent.com/StevenBlack/hosts/master/hosts\nhttps://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds.txt\nhttps://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt\nhttps://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt\nhttps://www.github.developerdan.com/hosts/lists/facebook-extended.txt\nhttps://www.github.developerdan.com/hosts/lists/tracking-aggressive-extended.txt",
     "importedLists": [
       "https://filters.adtidy.org/windows/filters/15.txt",
-      "https://github.com/nickspaargaren/no-google/raw/master/pihole-google.txt",
       "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/hosts/ultimate.txt",
       "https://gitlab.com/ookangzheng/dbl-oisd-nl/raw/master/dbl.txt",
       "https://hblock.molinero.dev/hosts",
       "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
       "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds.txt",
-      "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/amazon/all",
-      "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/apple/all",
-      "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/facebook/all",
-      "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/microsoft/all",
       "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt",
       "https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt",
       "https://www.github.developerdan.com/hosts/lists/facebook-extended.txt",
       "https://www.github.developerdan.com/hosts/lists/tracking-aggressive-extended.txt"
     ],
-    "popupPanelSections": 31,
-    "suspendUntilListsAreLoaded": true
+    "popupPanelSections": 31
   },
   "selectedFilterLists": [
     "ublock-filters",
@@ -61,12 +55,7 @@
     "https://filters.adtidy.org/windows/filters/15.txt",
     "https://raw.githubusercontent.com/jerryn70/GoodbyeAds/master/Hosts/GoodbyeAds.txt",
     "https://gitlab.com/hagezi/mirror/-/raw/main/dns-blocklists/hosts/ultimate.txt",
-    "https://github.com/nickspaargaren/no-google/raw/master/pihole-google.txt",
     "https://hblock.molinero.dev/hosts",
-    "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/amazon/all",
-    "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/apple/all",
-    "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/facebook/all",
-    "https://raw.githubusercontent.com/jmdugan/blocklists/master/corporations/microsoft/all",
     "https://raw.githubusercontent.com/notracking/hosts-blocklists/master/hostnames.txt",
     "https://www.github.developerdan.com/hosts/lists/ads-and-tracking-extended.txt",
     "https://www.github.developerdan.com/hosts/lists/facebook-extended.txt",

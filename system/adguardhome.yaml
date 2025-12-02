@@ -24,11 +24,7 @@ dns:
     - 10.64.0.1
   upstream_dns_file: ""
   bootstrap_dns:
-    - 10.64.0.1
-    - https://9.9.9.9/dns-query
-    - https://149.112.112.112/dns-query
-    - https://[2620:fe::11]/dns-query
-    - https://[2620:fe::fe:11]/dns-query
+    - 127.0.0.1:53
   fallback_dns:
     - https://dns.quad9.net/dns-query
     - https://9.9.9.9/dns-query
@@ -117,30 +113,6 @@ filters:
     name: hBlock
     id: 1756073421
   - enabled: true
-    url: https://raw.githubusercontent.com/nickspaargaren/no-google/refs/heads/master/pihole-google.txt
-    name: No Google 1
-    id: 1756073422
-  - enabled: true
-    url: https://raw.githubusercontent.com/jmdugan/blocklists/refs/heads/master/corporations/amazon/all
-    name: No Amazon
-    id: 1756073423
-  - enabled: true
-    url: https://raw.githubusercontent.com/jmdugan/blocklists/refs/heads/master/corporations/microsoft/all
-    name: No Microsoft
-    id: 1756073424
-  - enabled: true
-    url: https://raw.githubusercontent.com/jmdugan/blocklists/refs/heads/master/corporations/google/all
-    name: No Google 2
-    id: 1756073425
-  - enabled: true
-    url: https://raw.githubusercontent.com/jmdugan/blocklists/refs/heads/master/corporations/facebook/all
-    name: No Facebook
-    id: 1756073426
-  - enabled: true
-    url: https://raw.githubusercontent.com/jmdugan/blocklists/refs/heads/master/corporations/apple/all
-    name: No Apple
-    id: 1756073427
-  - enabled: true
     url: https://easylist.to/easylist/easylist.txt
     name: EasyList
     id: 1756073429
@@ -193,9 +165,7 @@ filters:
     name: Energized Ultimate
     id: 1756073441
 whitelist_filters: []
-user_rules:
-  - '@@||amazontrust.com^$important'
-  - '@@||ajax.googleapis.com^$important'
+user_rules: []
 dhcp:
   enabled: false
   interface_name: ""
