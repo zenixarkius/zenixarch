@@ -1385,7 +1385,7 @@ CONFIG_PREVENT_FIRMWARE_BUILD=y
 CONFIG_FW_LOADER=y
 # CONFIG_FW_LOADER_DEBUG is not set
 CONFIG_EXTRA_FIRMWARE="i915/adls_dmc_ver2_01.bin i915/tgl_guc_70.bin i915/tgl_huc.bin intel/ibt-1040-0041.ddc intel/ibt-1040-0041.sfi intel-ucode/06-b7-01 iwlwifi-so-a0-gf-a0.pnvm iwlwifi-so-a0-gf-a0-89.ucode"
-CONFIG_EXTRA_FIRMWARE_DIR="../linux-firmware"
+CONFIG_EXTRA_FIRMWARE_DIR=".."
 # CONFIG_FW_LOADER_USER_HELPER is not set
 CONFIG_FW_LOADER_COMPRESS=y
 # CONFIG_FW_LOADER_COMPRESS_XZ is not set
