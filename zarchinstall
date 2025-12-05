@@ -1,16 +1,16 @@
 #!/bin/bash
 set -euo pipefail
 
-(( EUID == 0 )) || { echo This script needs to be run as root; exit 1; }
+(( EUID == 0 )) || exit 1
 
-SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
-    source "$SCRIPTDIR"/misc/lists.conf
+    source "$DIR"/misc/lists.conf
 
-    find "$SCRIPTDIR"/dotfiles -type f | while read -r src; do
-        [[ "$src" =~ user.js ]] && { cmp -s "$src" /home/user/.librewolf/user/user.js || install -Dm644 "$src" /home/user/.librewolf/user/user.js; } && continue
-        [[ $(readlink /home/user/"${src#"$SCRIPTDIR"/dotfiles/}") = "$src" ]] || ln -sf "$src" /home/user/"${src#"$SCRIPTDIR"/dotfiles/}"
+    find "$DIR"/dotfiles -type f | while read -r src; do
+        [[ "$src" = *user.js ]] && { cmp -s "$src" /home/user/.librewolf/user/user.js || install -Dm644 "$src" /home/user/.librewolf/user/user.js; } && continue
+        [[ $(readlink /home/user/"${src#"$DIR"/dotfiles/}") = "$src" ]] || ln -sf "$src" /home/user/"${src#"$DIR"/dotfiles/}"
     done
 
     for d in /home/user/.{cache,local}; do
@@ -19,10 +19,10 @@ configuration() {
 
     chown user:user -R /home/user
 
-    find "$SCRIPTDIR"/system -type f | while read -r src; do
-        args=(-Dm644) dest=/etc/"${src#"$SCRIPTDIR"/system/}"
-        [[ "$src" =~ adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
-        [[ "$src" =~ overclock.bin ]] && args=(-Dm755)
+    find "$DIR"/system -type f | while read -r src; do
+        args=(-Dm644) dest=/etc/"${src#"$DIR"/system/}"
+        [[ "$src" = *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
+        [[ "$src" = *overclock.bin ]] && args=(-Dm755)
         cmp -s "$src" "$dest" || install "${args[@]}" "$src" "$dest"
     done
 
@@ -32,36 +32,27 @@ configuration() {
         pacman -U https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-7.0.0.r7.g1f38429-2-x86_64.pkg.tar.zst
     fi
 
-    pacman -S --noconfirm --needed --asdep "${PACKAGES_DEP[@]}"
-    pacman -S --noconfirm --needed "${PACKAGES_EXP[@]}"
+    pacman -S --noconfirm --needed --asdep "${DEPS[@]}"
+    pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-    if ! [[ $(pacman -Q openrgb | awk '{print $2}') = 1.0rc1-2 ]]; then
-        (cd /tmp # OpenRGB is completely broken for me after this version
+    if ! [[ $(pacman -Q openrgb | awk '{print $2}') = 1.0rc1-2 ]]; then (
+        cd /tmp # OpenRGB is completely broken for me after this version
+        pacman -Rcns --noconfirm openrgb
         curl -OJ https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
-        pacman -U --noconfirm openrgb*.zst)
-    fi
+        pacman -U --noconfirm openrgb*.zst
+    ) fi
 
     sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf # Fix Steam creating ~/.pulse-cookie
     sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash # Fix pass-otp `which not found'
 
-    for svc in "${SERVICES[@]}"; do
-        systemctl is-enabled -q "$svc" || systemctl enable "$svc"
-    done
-
-    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        [[ "${SERVICES[*]}" =~ $svc ]] || [[ "$svc" = getty@.service ]] || systemctl disable "$svc"
-    done
-
-    systemctl enable "${TIMERS[@]}"
+    systemctl enable "${UNITS[@]}"
     systemctl mask "${MASKED[@]}"
 
-    if sbctl status | grep -q 'Setup Mode:.*Enabled' && [[ -e /dev/tpm0 ]]; then
-        sbctl create-keys
-        sbctl enroll-keys --tpm-eventlog
-        sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-    else
-        echo Skipping Secure Boot setup as it is not in Setup Mode or no TPM detected
-    fi
+    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
+        [[ "${UNITS[*]}" = *$svc* ]] || [[ "$svc" = getty@* ]] || systemctl disable "$svc"
+    done
+
+    sbctl status | grep -q 'Setup.*Enabled' && [[ -e /dev/tpm0 ]] && sbctl create-keys && sbctl enroll-keys --tpm-eventlog && sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
 
     echo Done
     exit
@@ -71,12 +62,12 @@ configuration() {
 : "$DISK:?" "$PASS:?"
 
 read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
-[[ "$IK" = IK ]] || { echo You didn\'t confirm you knew; exit 1; }
+[[ "$IK" = IK ]] || exit 1
 
 umount -R /mnt &> /dev/null || :
 cryptsetup close cryptroot &> /dev/null || :
 
-[[ "$DISK" =~ nvme ]] && { nvme id-ns -H /dev/"$DISK" | grep -q '1.*4096'; } && nvme format --lbaf=1 --force /dev/"$DISK"
+nvme id-ns -H /dev/"$DISK" | grep -q '1.*4096' && nvme format --lbaf=1 --force /dev/"$DISK"
 
 sgdisk --zap-all /dev/"$DISK"
 sgdisk -g /dev/"$DISK"
@@ -124,9 +115,9 @@ echo en_US.UTF-8 UTF-8 > /mnt/etc/locale.gen
 
 ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
 
-cp -r "$SCRIPTDIR" /mnt/home/user/.zenixarch/
+cp -r "$DIR" /mnt/home/user/.zenixarch/
 
-arch-chroot /mnt SCRIPTDIR=/home/user/.zenixarch bash -e << CHROOT
+arch-chroot /mnt DIR=/home/user/.zenixarch bash -e << CHROOT
 $(declare -f configuration)
 
 locale-gen
@@ -135,8 +126,8 @@ hwclock --systohc
 pacman -S --noconfirm --asdep base-devel
 echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
 
-sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" \$SCRIPTDIR/kernel/config
-(cp -r \$SCRIPTDIR/kernel /tmp/kbuild && cd /tmp/kbuild
+sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" \$DIR/kernel/config
+(cp -r \$DIR/kernel /tmp/kbuild && cd /tmp/kbuild
 sudo -u user makepkg -si --noconfirm)
 
 pacman -Rcns --noconfirm \$(pacman -Qttdq);
