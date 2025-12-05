@@ -1,0 +1,8 @@
+[Unit]
+Description=Set NVIDIA overclocks
+
+[Service]
+ExecStart=/bin/overclock
+
+[Install]
+WantedBy=multi-user.target

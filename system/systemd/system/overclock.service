@@ -1,9 +1,0 @@
-[Unit]
-Description=Set NVIDIA overclocks and OpenRGB lighting
-
-[Service]
-WorkingDirectory=/tmp
-ExecStart=/bin/bash -c '/etc/systemd/system/overclock.bin; for n in 1 2; do openrgb -m static -c 1f13d4 -b 100; done'
-
-[Install]
-WantedBy=multi-user.target

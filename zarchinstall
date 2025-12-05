@@ -1,16 +1,59 @@
 #!/bin/bash
+(( EUID == 0 )) || exit
 set -euo pipefail
 
-(( EUID == 0 )) || exit 1
+##################################################
+
+export PACMAN=(
+    adguardhome
+    base
+    btrfs-progs
+    cachyos-keyring
+    cachyos-mirrorlist
+    cachyos-v3-mirrorlist
+    foot
+    git
+    grimblast-git
+    hyprland
+    hyprpaper
+    hyprpicker
+    iptables-nft
+    iwd
+    librewolf-bin
+    neovim
+    noto-fonts
+    pass-otp
+    pipewire-jack
+    pipewire-pulse
+    sbctl
+    signal-desktop
+    ttf-nerd-fonts-symbols
+    wireguard-tools
+    wl-clipboard
+)
+
+export SYSTEMD=(
+    adguardhome.service
+    btrfs-scrub@-.timer
+    fstrim.timer
+    iwd.service
+    nftables.service
+    overclock.service
+    rgb.service
+    systemd-timesyncd.service
+    wireguard.service
+)
+
+##################################################
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 configuration() {
-    source "$DIR"/misc/lists.conf
-
-    find "$DIR"/dotfiles -type f | while read -r src; do
-        [[ "$src" = *user.js ]] && { cmp -s "$src" /home/user/.librewolf/user/user.js || install -Dm644 "$src" /home/user/.librewolf/user/user.js; } && continue
-        [[ $(readlink /home/user/"${src#"$DIR"/dotfiles/}") = "$src" ]] || ln -sf "$src" /home/user/"${src#"$DIR"/dotfiles/}"
+    find "$DIR"/{dotfiles,system} -type f | while read -r src; do
+        args=(-Dm644) dest=/etc/"${src#"$DIR"/system/}"
+        [[ "$src" = *dotfiles* ]] && dest=/home/user/"${src#"$DIR"/dotfiles/}"
+        [[ "$src" = *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
+        cmp -s "$src" "$dest" || install "${args[@]}" "$src" "$dest"
     done
 
     for d in /home/user/.{cache,local}; do
@@ -19,25 +62,18 @@ configuration() {
 
     chown user:user -R /home/user
 
-    find "$DIR"/system -type f | while read -r src; do
-        args=(-Dm644) dest=/etc/"${src#"$DIR"/system/}"
-        [[ "$src" = *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
-        [[ "$src" = *overclock.bin ]] && args=(-Dm755)
-        cmp -s "$src" "$dest" || install "${args[@]}" "$src" "$dest"
-    done
-
     if ! pacman -Q cachyos-mirrorlist &>/dev/null; then
         pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
         pacman-key --lsign-key F3B607488DB35A47
         pacman -U https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-7.0.0.r7.g1f38429-2-x86_64.pkg.tar.zst
     fi
 
-    pacman -S --noconfirm --needed --asdep "${DEPS[@]}"
-    pacman -S --noconfirm --needed "${PACKAGES[@]}"
+    pacman -S --noconfirm --needed "${PACMAN[@]}"
+    pacman -U --noconfirm --needed "$DIR"/overclock/*zst
 
     if ! [[ $(pacman -Q openrgb | awk '{print $2}') = 1.0rc1-2 ]]; then (
         cd /tmp # OpenRGB is completely broken for me after this version
-        pacman -Rcns --noconfirm openrgb
+        pacman -Rcns --noconfirm openrgb || :
         curl -OJ https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
         pacman -U --noconfirm openrgb*.zst
     ) fi
@@ -45,16 +81,19 @@ configuration() {
     sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf # Fix Steam creating ~/.pulse-cookie
     sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash # Fix pass-otp `which not found'
 
-    systemctl enable "${UNITS[@]}"
-    systemctl mask "${MASKED[@]}"
+    systemctl enable "${SYSTEMD[@]}"
+    systemctl mask systemd-boot-random-seed.service
 
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        [[ "${UNITS[*]}" = *$svc* ]] || [[ "$svc" = getty@* ]] || systemctl disable "$svc"
+        [[ "${SYSTEMD[*]}" = *$svc* ]] || [[ "$svc" = getty@* ]] || systemctl disable "$svc"
     done
 
-    sbctl status | grep -q 'Setup.*Enabled' && [[ -e /dev/tpm0 ]] && sbctl create-keys && sbctl enroll-keys --tpm-eventlog && sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+    if sbctl status | grep -q 'Setup.*Enabled' && [[ -e /dev/tpm0 ]]; then
+        sbctl create-keys
+        sbctl enroll-keys --tpm-eventlog
+        sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+    fi
 
-    echo Done
     exit
 }
 
@@ -62,7 +101,7 @@ configuration() {
 : "$DISK:?" "$PASS:?"
 
 read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
-[[ "$IK" = IK ]] || exit 1
+[[ "$IK" = IK ]] || exit
 
 umount -R /mnt &> /dev/null || :
 cryptsetup close cryptroot &> /dev/null || :

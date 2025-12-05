@@ -8,11 +8,11 @@ bind '"\e[B":history-search-forward'
 
 shopt -s histappend cdspell autocd cmdhist histverify
 
-export PATH="$HOME/.zenixarch:$PATH"
 export FUNCNEST=100
 
 export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
 export HISTCONTROL=ignoreboth:erasedups
+export HISTFILESIZE=2000
 
 export MAKEFLAGS=-j$(nproc)
 export PACMAN_AUTH=pkexec
