@@ -49,8 +49,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │   │   └── user.js             # Extra ui, performance, and hardening tweaks over librewolf's defaults
 │   │   ├── installs.ini
 │   │   └── profiles.ini
-│   ├── .bash_profile               # Autostart Hyprland
-│   ├── .bashrc                     # Some useful aliases for system maintenance
+│   ├── .bashrc                     # Useful defaults and a few functions for system maintenance
 │   └── .gitconfig
 ├── kernel
 │   ├── config                      # My custom kernel config. It's compiled with llvm/clang, -O3, Full LTO,

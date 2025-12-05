@@ -1,20 +1,18 @@
-#
-# ~/.bashrc
-#
+# shellcheck disable=2155
 
-{ (( EUID == 0 )) || [[ $- != *i* ]]; } && return
+[[ -z $DISPLAY && $(tty) == /dev/tty1 && $HYPRLAND != y ]] && hyprland && export HYPRLAND=y
+[[ $EUID = 0 || $- != *i* ]] && return
 
 bind '"\e[A":history-search-backward'
 bind '"\e[B":history-search-forward'
 
 shopt -s histappend cdspell autocd cmdhist histverify
 
+export PATH="$HOME/.zenixarch:$PATH"
 export FUNCNEST=100
 
-export PROMPT_COMMAND="history -a; history -n; $PROMPT_COMMAND"
-export HISTCONTROL=ignoredups:erasedups
-export HISTSIZE=10000
-export HISTFILESIZE=20000
+export PROMPT_COMMAND="history -a; history -c; history -r; $PROMPT_COMMAND"
+export HISTCONTROL=ignoreboth:erasedups
 
 export MAKEFLAGS=-j$(nproc)
 export PACMAN_AUTH=pkexec
@@ -26,24 +24,23 @@ alias ls='ls -lha --color=always --group-directories-first'
 alias grep='grep --color=always'
 alias diff='diff --color=always'
 
-alias orphans='sudo bash -c "pacman -Rcns \$(pacman -Qttdq); pacman -Runs \$(pacman -Qqd)"'
-alias prune='tac ~/.bash_history | awk "!seen[\$0]++" | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history'
-alias paccache='sudo bash -c "yes | pacman -Scc"'
-alias logrotate='sudo bash -c "journalctl --rotate && journalctl --vacuum-time=1s"'
-
-alias mssd='sudo bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
-alias ussd='sudo bash -c "umount -R /mnt && cryptsetup close cryptext"'
-
-alias rsize='sudo du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'
-
-alias lo='find ~{,/.config} /etc /var/{lib,cache,log} -maxdepth 1 | while read -r lo; do [[ "${filters[*]}" =~ $lo ]] || du -sh "$lo" 2> /dev/null; done'
-alias lop='for f in "${filters[@]}"; do [[ -e $f ]] || echo "$f"; done'
-
 cd() { builtin cd "$@" && ls; }
+
+sudo() { su -p -c "$(printf '%q ' "$@")"; }
 
 search() { sudo find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print; }
 
-sudo() { su -p -c "$(printf '%q ' "$@")"; }
+leftovers() {
+    echo LEFTOVER FILES:
+    find ~{,/.config} /etc /var/{lib,cache,log} -maxdepth 1 | while read -r f; do
+        [[ "${filters[*]}" = *$f* ]] || du -sh "$f" 2>/dev/null
+    done
+
+    echo LEFTOVER FILTERS:
+    for f in "${filters[@]}"; do
+        [[ -e $f ]] || echo "$f"
+    done
+}
 
 filters=(
     /home/user/.bash_logout
@@ -57,6 +54,7 @@ filters=(
     /home/user/.password-store
     /home/user/.librewolf
     /home/user/.local
+    /home/user/.zenixarch
 
     /home/user/.config/dconf
     /home/user/.config/hypr
@@ -124,7 +122,6 @@ filters=(
     /etc/mke2fs.conf
     /etc/mkinitcpio.conf
     /etc/mkinitcpio.d
-    /etc/modules-load.d
     /etc/mtab
     /etc/netconfig
     /etc/nftables.conf
