@@ -1,7 +1,7 @@
 <div align="center">
 
 # Zenixark's Arch Linux Desktop Setup
-**🞀 My KISS privacy and performance focused Arch installation fully reproducible in one command 🞂**
+**My KISS privacy and performance focused Arch installation fully reproducible in one command**
 
 NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so I decided to write a bash script loosely based on them to make my setup reproducible.
 
@@ -62,6 +62,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
 │   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
+│   ├── lists.conf                  # Declarative lists of pacman packages and systemd units
 │   ├── overclock.c                 # Source of the overclock binary
 │   └── ublock.json                 # A REALLY heavy handed uBlock config, this has to be manually imported
 ├── system

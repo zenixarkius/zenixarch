@@ -2,7 +2,7 @@ pkgver=6.18.0
 nv=580.105.08
 
 pkgname=linux-zenixark
-depends=(initramfs nvidia-utils=$nv)
+depends=(base mkinitcpio nvidia-utils=$nv)
 makedepends=(bc clang lld llvm perl python)
 
 source=(config
