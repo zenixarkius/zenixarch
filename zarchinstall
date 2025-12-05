@@ -33,17 +33,19 @@ export PACKAGES=(
     wl-clipboard
 )
 
-export SERVICES=(adguardhome.service iwd.service nftables.service overclock.service systemd-timesyncd.service wireguard.service)
-export TIMERS=(btrfs-scrub@-.timer fstrim.timer)
-export MASKED=(systemd-boot-random-seed)
-
 configuration() {
+    SERVICES=(adguardhome.service iwd.service nftables.service overclock.service systemd-timesyncd.service wireguard.service)
+
     find "$SCRIPTDIR"/{dotfiles,system} -type f | while read -r src; do
         args=(-Dm644) dest="/etc/${src#"$SCRIPTDIR"/system/}"
         [[ "$src" =~ adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest="/var/lib/private/adguardhome/AdGuardHome.yaml"
         [[ "$src" =~ dotfiles/ ]] && args=(-Dm644 -o user -g user) dest="/home/user/${src#"$SCRIPTDIR"/dotfiles/}"
         [[ "$src" =~ overclock.bin ]] && args=(-Dm755)
         cmp -s "$src" "$dest" || install "${args[@]}" "$src" "$dest"
+    done
+
+    for d in /home/user/.{cache,local}; do
+        [[ $(readlink "$d") == /tmp ]] || { ln -sfn /tmp "$d" && chown user:user "$d"; }
     done
 
     pacman -S --noconfirm --needed "${PACKAGES[@]}"
@@ -64,16 +66,11 @@ configuration() {
     done
 
     for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        [[ "$svc" = getty@.service ]] && continue
-        [[ "${SERVICES[*]}" =~ $svc ]] || systemctl disable $NOW "$svc"
+        [[ "${SERVICES[*]}" =~ $svc ]] || [[ "$svc" = getty@.service ]] || systemctl disable $NOW "$svc"
     done
 
-    systemctl enable "${TIMERS[@]}"
-    systemctl mask "${MASKED[@]}"
-
-    for d in /home/user/.{cache,local}; do
-        [[ $(readlink "$d") == /tmp ]] || { ln -sfn /tmp "$d" && chown user:user "$d"; }
-    done
+    systemctl enable btrfs-scrub@-.timer fstrim.timer
+    systemctl mask systemd-boot-random-seed
 
     mkinitcpio -P || :
 
@@ -84,91 +81,90 @@ configuration() {
     else
         echo Skipping Secure Boot setup as it is not in Setup Mode or no TPM detected
     fi
+
+    echo Done
+    exit
 }
 
-if [[ -d /run/archiso ]]; then
-    : "$DISK:?" "$PASS:?"
+[[ ! -d /run/archiso ]] && NOW=--now configuration
 
-    echo -e "You probably shouldn't be running this if you aren't Zenixark.\nType 'IK' to continue to disk wiping: "
-    read -r IK
-    [[ "$IK" == IK ]] || { echo "You didn't confirm you knew"; exit 1; }
+: "$DISK:?" "$PASS:?"
+echo -e "You probably shouldn't be running this if you aren't Zenixark.\nType 'IK' to continue to disk wiping: "
+read -r IK
+[[ "$IK" == IK ]] || { echo You didn\'t confirm you knew; exit 1; }
 
-    umount -R /mnt &> /dev/null || :
-    cryptsetup close cryptroot &> /dev/null || :
+umount -R /mnt &> /dev/null || :
+cryptsetup close cryptroot &> /dev/null || :
 
-    [[ "$DISK" =~ nvme ]] && { nvme id-ns -H /dev/"$DISK" | grep -q "1.*4096"; } && nvme format --lbaf=1 --force /dev/"$DISK"
+[[ "$DISK" =~ nvme ]] && { nvme id-ns -H /dev/"$DISK" | grep -q "1.*4096"; } && nvme format --lbaf=1 --force /dev/"$DISK"
 
-    sgdisk --zap-all /dev/"$DISK"
-    sgdisk -g /dev/"$DISK"
-    sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs /dev/"$DISK"
-    sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs /dev/"$DISK"
+sgdisk --zap-all /dev/"$DISK"
+sgdisk -g /dev/"$DISK"
+sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs /dev/"$DISK"
+sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs /dev/"$DISK"
 
-    [[ "$DISK" =~ [0-9]$ ]] && DISK="$DISK"p
+[[ "$DISK" =~ [0-9]$ ]] && DISK="$DISK"p
 
-    mkfs.fat -F 32 /dev/"$DISK"1
+mkfs.fat -F 32 /dev/"$DISK"1
 
-    echo "$PASS" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 /dev/"$DISK"2
-    echo "$PASS" | cryptsetup open /dev/"$DISK"2 cryptroot
+echo "$PASS" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 /dev/"$DISK"2
+echo "$PASS" | cryptsetup open /dev/"$DISK"2 cryptroot
 
-    mkfs.btrfs -f /dev/mapper/cryptroot
+mkfs.btrfs -f /dev/mapper/cryptroot
 
-    mount /dev/mapper/cryptroot /mnt
-    btrfs su cr /mnt/@
-    btrfs su cr /mnt/@home
-    btrfs su cr /mnt/@var_log
-    btrfs su cr /mnt/@var_cache
-    btrfs su cr /mnt/@var_lib_libvirt_images
-    chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
-    umount /mnt
+mount /dev/mapper/cryptroot /mnt
+btrfs su cr /mnt/@
+btrfs su cr /mnt/@home
+btrfs su cr /mnt/@var_log
+btrfs su cr /mnt/@var_cache
+btrfs su cr /mnt/@var_lib_libvirt_images
+chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
+umount /mnt
 
-    mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
-    mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
-    mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"$DISK"1 /mnt/boot
-    mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
-    mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/var/log
-    mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
-    mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
+mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
+mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
+mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"$DISK"1 /mnt/boot
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/var/log
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
+mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
 
-    reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
-    sed -i "s/^#\(ParallelDownloads = 5\)/\1/" /etc/pacman.conf
+reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
+sed -i "s/^#\(ParallelDownloads = 5\)/\1/" /etc/pacman.conf
 
-    curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
-    (cd cachyos-repo && ./cachyos-repo.sh)
+curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
+(cd cachyos-repo && ./cachyos-repo.sh)
 
-    pacstrap /mnt "${PACKAGES[@]}"
+pacstrap /mnt "${PACKAGES[@]}"
 
-    genfstab -U /mnt >> /mnt/etc/fstab
+genfstab -U /mnt >> /mnt/etc/fstab
 
-    useradd -R /mnt -m user
-    chpasswd -R /mnt <<< "root:$PASS"
+useradd -R /mnt -m user
+chpasswd -R /mnt <<< "root:$PASS"
 
-    cp -r "$SCRIPTDIR" /mnt/home/user/.zenixarch/
+echo LANG=en_US.UTF-8 > /mnt/etc/locale.conf
+echo en_US.UTF-8 UTF-8 > /mnt/etc/locale.gen
 
-    arch-chroot /mnt NOW='' SCRIPTDIR=/home/user/.zenixarch bash -e << CHROOT
-        $(declare -f configuration)
+ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
 
-        echo LANG=en_US.UTF-8 > /etc/locale.conf
-        echo en_US.UTF-8 UTF-8 > /etc/locale.gen
-        locale-gen
+cp -r "$SCRIPTDIR" /mnt/home/user/.zenixarch/
 
-        ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
-        hwclock --systohc
+arch-chroot /mnt NOW='' SCRIPTDIR=/home/user/.zenixarch bash -e << CHROOT
+    $(declare -f configuration)
 
-        pacman -S --noconfirm base-devel
-        echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
+    locale-gen
+    hwclock --systohc
 
-        (cd \$SCRIPTDIR/kernel
-        sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" config
-        sudo -u user makepkg -si --noconfirm
+    pacman -S --noconfirm base-devel
+    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
 
-        pacman -Rcns --noconfirm base-devel
-        rm -rf /boot/* /etc/sudoers.d src pkg *.{patch,xz,run})
-        mkdir -p /boot/EFI/BOOT
+    (cd \$SCRIPTDIR/kernel
+    sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" config
+    sudo -u user makepkg -si --noconfirm
 
-        configuration
+    pacman -Rcns --noconfirm base-devel
+    rm -rf /boot/* /etc/sudoers.d src pkg *.{patch,xz,run})
+    mkdir -p /boot/EFI/BOOT
+
+    configuration
 CHROOT
-else
-    NOW=--now configuration
-fi
-
-echo Done
