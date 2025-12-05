@@ -1,6 +1,5 @@
 #!/bin/bash
 set -euo pipefail
-
 (( EUID == 0 )) || { echo This script needs to be run as root; exit 1; }
 
 SCRIPTDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -33,20 +32,39 @@ export PACKAGES=(
     wl-clipboard
 )
 
-configuration() {
-    SERVICES=(adguardhome.service iwd.service nftables.service overclock.service systemd-timesyncd.service wireguard.service)
+export SERVICES=(
+    adguardhome.service
+    iwd.service
+    nftables.service
+    overclock.service
+    systemd-timesyncd.service
+    wireguard.service
+)
 
-    find "$SCRIPTDIR"/{dotfiles,system} -type f | while read -r src; do
+configuration() {
+    find "$SCRIPTDIR"/dotfiles -type f | while read -r src; do
+        [[ "$src" =~ user.js ]] && { cmp -s "$src" /home/user/.librewolf/user/user.js || install -Dm644 "$src" /home/user/.librewolf/user/user.js; } && continue
+        [[ $(readlink "/home/user/${src#"$SCRIPTDIR"/dotfiles/}") = "$src" ]] || echo ln -sf "$src" "/home/user/${src#"$SCRIPTDIR"/dotfiles/}"
+    done
+
+    for d in /home/user/.{cache,local}; do
+        [[ $(readlink "$d") = /tmp ]] || ln -sfn /tmp "$d"
+    done
+
+    chown user:user -R /home/user
+
+    find "$SCRIPTDIR"/system -type f | while read -r src; do
         args=(-Dm644) dest="/etc/${src#"$SCRIPTDIR"/system/}"
         [[ "$src" =~ adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest="/var/lib/private/adguardhome/AdGuardHome.yaml"
-        [[ "$src" =~ dotfiles/ ]] && args=(-Dm644 -o user -g user) dest="/home/user/${src#"$SCRIPTDIR"/dotfiles/}"
         [[ "$src" =~ overclock.bin ]] && args=(-Dm755)
         cmp -s "$src" "$dest" || install "${args[@]}" "$src" "$dest"
     done
 
-    for d in /home/user/.{cache,local}; do
-        [[ $(readlink "$d") == /tmp ]] || { ln -sfn /tmp "$d" && chown user:user "$d"; }
-    done
+    if ! pacman -Q cachyos-mirrorlist &>/dev/null; then
+        pacman-key --recv-keys F3B607488DB35A47 --keyserver keyserver.ubuntu.com
+        pacman-key --lsign-key F3B607488DB35A47
+        pacman -U https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-keyring-20240331-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-mirrorlist-22-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/cachyos-v3-mirrorlist-22-1-any.pkg.tar.zst https://mirror.cachyos.org/repo/x86_64/cachyos/pacman-7.0.0.r7.g1f38429-2-x86_64.pkg.tar.zst
+    fi
 
     pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
@@ -72,8 +90,6 @@ configuration() {
     systemctl enable btrfs-scrub@-.timer fstrim.timer
     systemctl mask systemd-boot-random-seed
 
-    mkinitcpio -P || :
-
     if sbctl status | grep -q "Setup Mode:.*Enabled" && [[ -e /dev/tpm0 ]]; then
         sbctl create-keys
         sbctl enroll-keys --tpm-eventlog
@@ -86,12 +102,12 @@ configuration() {
     exit
 }
 
-[[ ! -d /run/archiso ]] && NOW=--now configuration
-
+[[ -d /run/archiso ]] || NOW=--now configuration
 : "$DISK:?" "$PASS:?"
+
 echo -e "You probably shouldn't be running this if you aren't Zenixark.\nType 'IK' to continue to disk wiping: "
 read -r IK
-[[ "$IK" == IK ]] || { echo You didn\'t confirm you knew; exit 1; }
+[[ "$IK" = IK ]] || { echo You didn\'t confirm you knew; exit 1; }
 
 umount -R /mnt &> /dev/null || :
 cryptsetup close cryptroot &> /dev/null || :
@@ -132,10 +148,7 @@ mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_li
 reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
 sed -i "s/^#\(ParallelDownloads = 5\)/\1/" /etc/pacman.conf
 
-curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
-(cd cachyos-repo && ./cachyos-repo.sh)
-
-pacstrap /mnt "${PACKAGES[@]}"
+pacstrap /mnt base
 
 genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -155,16 +168,15 @@ arch-chroot /mnt NOW='' SCRIPTDIR=/home/user/.zenixarch bash -e << CHROOT
     locale-gen
     hwclock --systohc
 
-    pacman -S --noconfirm base-devel
+    pacman -S --noconfirm --asdep base-devel
     echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
 
-    (cd \$SCRIPTDIR/kernel
-    sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" config
-    sudo -u user makepkg -si --noconfirm
+    sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" \$SCRIPTDIR/kernel/config
+    (cp -r \$SCRIPTDIR/kernel /tmp/kbuild && cd /tmp/kbuild
+    sudo -u user makepkg -si --noconfirm)
 
-    pacman -Rcns --noconfirm base-devel
-    rm -rf /boot/* /etc/sudoers.d src pkg *.{patch,xz,run})
-    mkdir -p /boot/EFI/BOOT
+    pacman -Rcns --noconfirm $(pacman -Qttdq);
+    rm -rf /etc/sudoers.d
 
     configuration
 CHROOT
