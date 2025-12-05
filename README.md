@@ -13,13 +13,13 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
                  .o+`                    -------------
                 `ooo/                    OS: Arch Linux x86_64
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
-              `+oooooo:                  Kernel: Linux 6.17.9-1-zenixark
+              `+oooooo:                  Kernel: Linux 6.18-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
             `/:-:++oooo+:                Packages: 407 (pacman)
-           `/++++/+++++++:               Shell: bash 5.3.3
+           `/++++/+++++++:               Shell: bash 5.3.8
           `/++++++++++++++:              Display (M34WQ): 3440x1440 in 34", 144 Hz [External]
          `/+++ooooooooooooo/`            Display (LG ULTRAGEAR): 1920x1080 in 24", 144 Hz [External]
-        ./ooosssso++osssssso+`           WM: Hyprland 0.52.1 (Wayland)
+        ./ooosssso++osssssso+`           WM: Hyprland 0.52.2 (Wayland)
        .oossssso-````/ossssss+`          Cursor: Adwaita
       -osssssso.      :ssssssso.         Terminal: foot 1.25.0
      :osssssss/        osssso+++.        Terminal Font: monospace (8pt)
@@ -59,6 +59,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │                               # control, 1000Hz tick rate, and other little things that count. It strips
 │   │                               # EVERY unnecessary subsystem and driver EXCEPT the bare minimum required
 │   │                               # for my desktop to work
+│   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
 │   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
 │   ├── overclock.c                 # Source of the overclock binary
@@ -66,8 +67,6 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 ├── system
 │   ├── iwd
 │   │   └── main.conf               # Allows iwd to configure the network
-│   ├── mkinitcpio.d
-│   │   └── linux-zenixark.preset   # Unified Kernel Image preset
 │   ├── systemd
 │   │   └── system
 │   │       ├── getty@.service.d
@@ -76,7 +75,6 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │       ├── overclock.service   # Applies NVIDIA overclocks and static blue RGB on startup
 │   │       └── wireguard.service   # Connects to a random VPN config on startup
 │   ├── adguardhome.yaml            # A REALLY heavy handed DNS sinkhole config
-│   ├── mkinitcpio.conf             # The minimum hooks required to boot the custom kernel
 │   ├── nftables.conf               # Strict default-deny firewall rules
 │   └── pacman.conf                 # Includes CachyOS repos for the extra optimization
 └── zarchinstall                    # The backbone of this project, it can do a full disk install from
