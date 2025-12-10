@@ -1,11 +1,4 @@
-cat > /tmp/mkinitcpio.conf << 'CONF'
-MODULES=()
-BINARIES=()
-FILES=()
-HOOKS=(base udev encrypt)
-COMPRESSION=zstd
-CONF
-
+echo 'HOOKS=(base udev encrypt)' > /tmp/mkinitcpio.conf
 ALL_config="/tmp/mkinitcpio.conf"
 ALL_kver="/usr/lib/modules/$(pacman -Qi linux-zenixark | awk '/Version/ {print $3}')-zenixark/vmlinuz"
 

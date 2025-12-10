@@ -1,177 +1,141 @@
-#!/bin/bash
+#!/usr/bin/bash
 set -euo pipefail
 (( EUID == 0 ))
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-export PACMAN=(
-    adguardhome
-    base
-    btrfs-progs
-    cachyos-keyring
-    cachyos-mirrorlist
-    cachyos-v3-mirrorlist
-    foot
-    git
-    grimblast-git
-    hyprland
-    hyprpaper
-    hyprpicker
-    iptables-nft
-    iwd
-    librewolf-bin
-    neovim
-    noto-fonts
-    pass-otp
-    pipewire-jack
-    pipewire-pulse
-    sbctl
-    signal-desktop
-    ttf-nerd-fonts-symbols
-    wireguard-tools
-    wl-clipboard
-)
+installation() {
+  nvme id-ns -H "/dev/${DISK}" | grep -q '1.*4096' && nvme format --lbaf=1 --force "/dev/${DISK}"
 
-export SYSTEMD=(
-    adguardhome.service
-    btrfs-scrub@-.timer
-    fstrim.timer
-    iwd.service
-    nftables.service
-    overclock.service
-    rgb.service
-    systemd-timesyncd.service
-    wireguard.service
-)
+  sgdisk --zap-all "/dev/${DISK}"
+  sgdisk -g "/dev/${DISK}"
+  sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs "/dev/${DISK}"
+  sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs "/dev/${DISK}"
+
+  [[ ${DISK} =~ [0-9]$ ]] && DISK="${DISK}p"
+
+  mkfs.fat -F 32 "/dev/${DISK}1"
+
+  echo "${PASS}" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 "/dev/${DISK}2"
+  echo "${PASS}" | cryptsetup open "/dev/${DISK}2" cryptroot
+
+  mkfs.btrfs -f /dev/mapper/cryptroot
+
+  mount /dev/mapper/cryptroot /mnt
+  btrfs su cr /mnt/@
+  btrfs su cr /mnt/@home
+  btrfs su cr /mnt/@var_log
+  btrfs su cr /mnt/@var_cache
+  btrfs su cr /mnt/@var_lib_libvirt_images
+  chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
+  umount /mnt
+
+  mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
+  mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
+  mount -o defaults,nodev,nosuid,noexec,umask=0077 "/dev/${DISK}1" /mnt/boot
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/var/log
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
+
+  reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
+  pacstrap /mnt base
+
+  genfstab -U /mnt >> /mnt/etc/fstab
+
+  useradd -R /mnt -m user
+  chpasswd -R /mnt <<< "root:${PASS}"
+
+  echo LANG=en_US.UTF-8 > /mnt/etc/locale.conf
+  sed -i '/^#en_US.UTF-8/s/^#//' /mnt/etc/locale.gen
+
+  ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
+
+  cp -r "${DIR}" /mnt/home/user/.zenixarch/
+  arch-chroot /mnt DIR=/home/user/.zenixarch bash << 'CHROOT'
+  set -euo pipefail
+
+  locale-gen
+  hwclock --systohc
+
+  pacman -S --noconfirm --asdep base-devel
+  echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
+
+  sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" "${DIR}/kernel/config"
+  cp -r "${DIR}/kernel" /tmp/kbuild
+  (cd /tmp/kbuild && sudo -u user makepkg -si --noconfirm)
+
+  pacman -Rcns --noconfirm $(pacman -Qttdq)
+  rm -rf /etc/sudoers.d
+
+  configuration
+CHROOT
+}
 
 configuration() {
-    find "$DIR"/{dotfiles,system} -type f | while read -r src; do
-        args=(-Dm644) dest=/etc/"${src#"$DIR"/system/}"
-        [[ "$src" = *dotfiles* ]] && dest=/home/user/"${src#"$DIR"/dotfiles/}"
-        [[ "$src" = *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
-        cmp -s "$src" "$dest" || install "${args[@]}" "$src" "$dest"
-    done
+  find "${DIR}"/{dotfiles,system} -type f | while read -r src; do
+    args=(-Dm644) dest="/etc/${src#"${DIR}/system/"}"
+    [[ ${src} == *dotfiles* ]] && dest="/home/user/${src#"${DIR}/dotfiles/"}"
+    [[ ${src} == *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
+    cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
+  done
 
-    for d in /home/user/.{cache,local}; do
-        [[ $(readlink "$d") = /tmp ]] || ln -sfn /tmp "$d"
-    done
+  for d in /home/user/.{cache,local}; do
+    [[ $(readlink "${d}") == /tmp ]] || ln -sfn /tmp "${d}"
+  done
 
-    chown user:user -R /home/user
+  chown user:user -R /home/user
 
-    if ! grep -q cachyos /etc/pacman.conf; then (
-        cd /tmp
-        curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
-        cd cachyos-repo
-        sed -i '/v4-mirrorlist/d' cachyos-repo.sh
-        yes | ./cachyos-repo.sh || :
-    ) fi
+  if ! grep -q cachyos /etc/pacman.conf; then (
+    cd /tmp
+    curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
+    cd cachyos-repo
+    sed -i '/v4-mirrorlist/d' cachyos-repo.sh
+    yes | ./cachyos-repo.sh || :
+  ) fi
 
-    sed -i '/^#Color/s/^#//' /etc/pacman.conf
+  sed -i '/^#Color/s/^#//' /etc/pacman.conf
 
-    pacman -S --noconfirm --needed "${PACMAN[@]}"
-    pacman -U --noconfirm --needed "$DIR"/overclock/*zst
+  pacman -S --noconfirm --needed adguardhome base btrfs-progs cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist foot git grimblast-git hyprland hyprpaper hyprpicker iptables-nft iwd librewolf-bin neovim noto-fonts pass-otp pipewire-jack pipewire-pulse sbctl signal-desktop ttf-nerd-fonts-symbols wireguard-tools wl-clipboard
+  pacman -U --noconfirm --needed "${DIR}/overclock/overclock.pkg.tar.zst"
 
-    if ! [[ $(pacman -Q openrgb | awk '{print $2}') = 1.0rc1-2 ]]; then (
-        cd /tmp # OpenRGB is completely broken for me after this version
-        pacman -Rcns --noconfirm openrgb || :
-        curl -OJ https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
-        pacman -U --noconfirm openrgb*.zst
-        grep -q 'IgnorePkg.*openrgb' /etc/pacman.conf || sed -i 's|^.IgnorePkg.*=|IgnorePkg = openrgb|' /etc/pacman.conf
-    ) fi
+  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then (
+    cd /tmp
+    pacman -Rcns --noconfirm openrgb || :
+    curl -OJ https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
+    pacman -U --noconfirm openrgb*.zst
+    grep -q 'IgnorePkg.*openrgb' /etc/pacman.conf || sed -i 's|^.IgnorePkg.*=|IgnorePkg = openrgb|' /etc/pacman.conf
+  ) fi
 
-    sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf # Fix Steam creating ~/.pulse-cookie
-    sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash # Fix pass-otp `which not found'
+  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
+  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
 
-    systemctl enable "${SYSTEMD[@]}"
-    systemctl mask systemd-boot-random-seed.service
+  UNITS=(adguardhome.service btrfs-scrub@-.timer fstrim.timer iwd.service nftables.service overclock.service rgb.service systemd-timesyncd.service wireguard.service)
+  systemctl enable "${UNITS[@]}"
+  systemctl mask systemd-boot-random-seed.service
 
-    for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-        [[ "${SYSTEMD[*]}" = *$svc* ]] || [[ "$svc" = getty@* ]] || systemctl disable "$svc"
-    done
+  for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
+    [[ ${UNITS[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
+  done
 
-    if sbctl status | grep -q 'Setup.*Enabled' && [[ -e /dev/tpm0 ]]; then
-        sbctl create-keys
-        sbctl enroll-keys --tpm-eventlog
-        sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-    fi
+  if sbctl status | grep -q 'Setup.*Enabled' && [[ -e /dev/tpm0 ]]; then
+    sbctl create-keys
+    sbctl enroll-keys --tpm-eventlog
+    sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+  fi
 
-    exit
+  exit
 }
 
 [[ -d /run/archiso ]] || configuration
-: "$DISK:?" "$PASS:?"
+
+: "${DISK}:?" "${PASS}:?"
 
 read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
-[[ "$IK" = IK ]]
+[[ ${IK} == IK ]]
 
 umount -R /mnt &> /dev/null || :
 cryptsetup close cryptroot &> /dev/null || :
 
-nvme id-ns -H /dev/"$DISK" | grep -q '1.*4096' && nvme format --lbaf=1 --force /dev/"$DISK"
-
-sgdisk --zap-all /dev/"$DISK"
-sgdisk -g /dev/"$DISK"
-sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs /dev/"$DISK"
-sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs /dev/"$DISK"
-
-[[ "$DISK" =~ [0-9]$ ]] && DISK="$DISK"p
-
-mkfs.fat -F 32 /dev/"$DISK"1
-
-echo "$PASS" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 /dev/"$DISK"2
-echo "$PASS" | cryptsetup open /dev/"$DISK"2 cryptroot
-
-mkfs.btrfs -f /dev/mapper/cryptroot
-
-mount /dev/mapper/cryptroot /mnt
-btrfs su cr /mnt/@
-btrfs su cr /mnt/@home
-btrfs su cr /mnt/@var_log
-btrfs su cr /mnt/@var_cache
-btrfs su cr /mnt/@var_lib_libvirt_images
-chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
-umount /mnt
-
-mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
-mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
-mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"$DISK"1 /mnt/boot
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/var/log
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
-mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
-
-reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
-sed -i 's/^#\(ParallelDownloads = 5\)/\1/' /etc/pacman.conf
-
-pacstrap /mnt base
-
-genfstab -U /mnt >> /mnt/etc/fstab
-
-useradd -R /mnt -m user
-chpasswd -R /mnt <<< root:"$PASS"
-
-echo LANG=en_US.UTF-8 > /mnt/etc/locale.conf
-sed -i '/^#en_US.UTF-8/s/^#//' /mnt/etc/locale.gen
-
-ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
-
-cp -r "$DIR" /mnt/home/user/.zenixarch/
-
-arch-chroot /mnt DIR=/home/user/.zenixarch bash -e << CHROOT
-$(declare -f configuration)
-
-locale-gen
-hwclock --systohc
-
-pacman -S --noconfirm --asdep base-devel
-echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
-
-sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" \$DIR/kernel/config
-(cp -r \$DIR/kernel /tmp/kbuild && cd /tmp/kbuild
-sudo -u user makepkg -si --noconfirm)
-
-pacman -Rcns --noconfirm \$(pacman -Qttdq);
-rm -rf /etc/sudoers.d
-
-configuration
-CHROOT
+export -f configuration
+installation
