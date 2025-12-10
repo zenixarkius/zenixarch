@@ -3,7 +3,7 @@ Description=Set OpenRGB lighting
 
 [Service]
 WorkingDirectory=/tmp
-ExecStart=/bin/bash -c 'do openrgb -m static -c 1f13d4 -b 100; done'
+ExecStart=/bin/bash -c 'for n in 1 2; do openrgb -m static -c 1f13d4 -b 100; done'
 
 [Install]
 WantedBy=multi-user.target
