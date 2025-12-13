@@ -60,12 +60,8 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
 │   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
-│   └── ublock.json                 # A REALLY heavy handed uBlock config, this has to be manually imported
-├── overclock
 │   ├── overclock.c                 # Source of the overclock binary
-│   ├── overclock.pkg.tar.zst       # Packaged binary because cuda... A 4GB PACKAGE... is required to build it
-│   ├── overclock.service           # Applies NVIDIA overclocks via NVML on startup
-│   └── PKGBUILD                    # Compiles and packages the overclock binary
+│   └── ublock.json                 # A REALLY heavy handed uBlock config, this has to be manually imported
 ├── system
 │   ├── iwd
 │   │   └── main.conf               # Allows iwd to configure the network
@@ -73,6 +69,8 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │   └── system
 │   │       ├── getty@.service.d
 │   │       │   └── autologin.conf  # TTY autologin
+│   │       ├── overclock.bin
+│   │       ├── overclock.service   # Applies NVIDIA overclocks via NVML on startup
 │   │       ├── rgb.service         # Sets my static blues on startup
 │   │       └── wireguard.service   # Connects to a random VPN config on startup
 │   ├── adguardhome.yaml            # A REALLY heavy handed DNS sinkhole config

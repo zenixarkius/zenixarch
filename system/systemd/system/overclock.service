@@ -2,7 +2,7 @@
 Description=Set NVIDIA overclocks
 
 [Service]
-ExecStart=/bin/overclock
+ExecStart=/etc/systemd/system/overclock.bin
 
 [Install]
 WantedBy=multi-user.target

@@ -76,6 +76,7 @@ configuration() {
   find "${DIR}"/{dotfiles,system} -type f | while read -r src; do
     args=(-Dm644) dest="/etc/${src#"${DIR}/system/"}"
     [[ ${src} == *dotfiles* ]] && dest="/home/user/${src#"${DIR}/dotfiles/"}"
+    [[ ${src} == *overclock.bin ]] && args=(-Dm755)
     [[ ${src} == *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
@@ -97,7 +98,6 @@ configuration() {
   sed -i '/^#Color/s/^#//' /etc/pacman.conf
 
   pacman -S --noconfirm --needed adguardhome base btrfs-progs cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist foot git grimblast-git hyprland hyprpaper hyprpicker iptables-nft iwd librewolf-bin neovim noto-fonts pass-otp pipewire-jack pipewire-pulse sbctl signal-desktop ttf-nerd-fonts-symbols wireguard-tools wl-clipboard
-  pacman -U --noconfirm --needed "${DIR}/overclock/overclock.pkg.tar.zst"
 
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then (
     cd /tmp
