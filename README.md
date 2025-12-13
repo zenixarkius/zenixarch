@@ -74,7 +74,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │       ├── rgb.service         # Sets my static blues on startup
 │   │       └── wireguard.service   # Connects to a random VPN config on startup
 │   ├── adguardhome.yaml            # A REALLY heavy handed DNS sinkhole config
-│   ├── nftables.conf               # Strict default-deny firewall rules
+│   ├── nftables.conf               # Default-deny firewall rules
 └── zarchinstall                    # The backbone of this project, it can do a full disk install from
                                     # a live ISO and be ran over and over again post-install to
                                     # idempotently reapply the repo's state
