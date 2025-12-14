@@ -77,7 +77,6 @@ configuration() {
     args=(-Dm644) dest="/etc/${src#"${DIR}/system/"}"
     [[ ${src} == *dotfiles* ]] && dest="/home/user/${src#"${DIR}/dotfiles/"}"
     [[ ${src} == *overclock.bin ]] && args=(-Dm755)
-    [[ ${src} == *adguardhome.yaml ]] && args=(-Dm600 -o nobody -g nobody) dest=/var/lib/private/adguardhome/AdGuardHome.yaml
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
 
@@ -97,7 +96,7 @@ configuration() {
 
   sed -i '/^#Color/s/^#//' /etc/pacman.conf
 
-  pacman -S --noconfirm --needed adguardhome base btrfs-progs cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist foot git grimblast-git hyprland hyprpaper hyprpicker iptables-nft iwd librewolf-bin neovim noto-fonts pass-otp pipewire-jack pipewire-pulse sbctl signal-desktop ttf-nerd-fonts-symbols wireguard-tools wl-clipboard
+  pacman -S --noconfirm --needed base btrfs-progs cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist foot git grimblast-git hyprland hyprpaper hyprpicker iptables-nft iwd mullvad-browser-bin neovim noto-fonts pass-otp pipewire-jack pipewire-pulse sbctl signal-desktop ttf-nerd-fonts-symbols wireguard-tools wl-clipboard
 
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then (
     cd /tmp
@@ -110,7 +109,7 @@ configuration() {
   sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
   sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
 
-  UNITS=(adguardhome.service btrfs-scrub@-.timer fstrim.timer iwd.service nftables.service overclock.service rgb.service systemd-timesyncd.service wireguard.service)
+  UNITS=(btrfs-scrub@-.timer fstrim.timer iwd.service nftables.service overclock.service rgb.service systemd-timesyncd.service wireguard.service)
   systemctl enable "${UNITS[@]}"
   systemctl mask systemd-boot-random-seed.service
 

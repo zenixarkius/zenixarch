@@ -13,7 +13,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
                  .o+`                    -------------
                 `ooo/                    OS: Arch Linux x86_64
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
-              `+oooooo:                  Kernel: Linux 6.18-1-zenixark
+              `+oooooo:                  Kernel: Linux 6.18.1-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
             `/:-:++oooo+:                Packages: 407 (pacman)
            `/++++/+++++++:               Shell: bash 5.3.8
@@ -27,7 +27,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
   `/ossssso+/:-        -:/+osssso+-      GPU 1: NVIDIA GeForce RTX 4070 [Discrete]
  `+sso+:-`                 `.-/+oso:     GPU 2: Intel UHD Graphics 770 @ 1.60 GHz [Integrated]
 `++:.                           `-/+/    Memory: 1.45 GiB / 31.11 GiB (5%)
-.`                                 `/    Disk (/): 2.22 GiB / 931.00 GiB (0%) - btrfs
+.`                                 `/    Disk (/): 1.97 GiB / 931.00 GiB (0%) - btrfs
 ```
 
 ---
@@ -43,12 +43,13 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │   │   └── sigilw.png
 │   │   └── nvim
 │   │       └── init.lua            # Lazy plugins setup + useful options
-│   ├── .librewolf
-│   │   ├── user
-│   │   │   └── user.js             # Extra ui, performance, and hardening tweaks over librewolf's defaults
-│   │   ├── installs.ini
-│   │   └── profiles.ini
-│   ├── .bashrc                     # Useful defaults and a few functions for system maintenance
+│   ├── .mullvad
+│   │   └── mullvadbrowser
+│   │       ├── user
+│   │       │   └── user.js         # Better defaults for the Mullvad and Tor Browsers
+│   │       ├── installs.ini
+│   │       └── profiles.ini
+│   ├── .bashrc                     # Useful defaults and a few functions/aliases for system maintenance
 │   └── .gitconfig
 ├── kernel
 │   ├── config                      # My custom kernel config. It's compiled with llvm/clang, -O3, Full LTO,
@@ -60,8 +61,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
 │   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
 ├── misc
-│   ├── overclock.c                 # Source of the overclock binary
-│   └── ublock.json                 # A REALLY heavy handed uBlock config, this has to be manually imported
+│   └── overclock.c                 # Source of the overclock binary
 ├── system
 │   ├── iwd
 │   │   └── main.conf               # Allows iwd to configure the network
@@ -73,8 +73,8 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │       ├── overclock.service   # Applies NVIDIA overclocks via NVML on startup
 │   │       ├── rgb.service         # Sets my static blues on startup
 │   │       └── wireguard.service   # Connects to a random VPN config on startup
-│   ├── adguardhome.yaml            # A REALLY heavy handed DNS sinkhole config
 │   ├── nftables.conf               # Default-deny firewall rules
+│   └── resolv.conf                 # Just sets the DNS server
 └── zarchinstall                    # The backbone of this project, it can do a full disk install from
                                     # a live ISO and be ran over and over again post-install to
                                     # idempotently reapply the repo's state
@@ -92,7 +92,7 @@ Don't care? Quite literally just:
 4. `DISK='<disk, like nvme0n1>' PASS='<a strong pass>' ./*/z*`
 5. `reboot`
 
-This is the only right way to install this setup... If you clone the repo and run it unchanged on an existing install, your installation is likely in the hands of God now.
+This is the only right way to install this setup... you *could* `git clone` and run zarchinstall on an existing installation, but I don't recommend it.
 
 ---
 
