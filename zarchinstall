@@ -46,17 +46,11 @@ installation() {
   useradd -R /mnt -m user
   chpasswd -R /mnt <<< "root:${PASS}"
 
-  echo LANG=en_US.UTF-8 > /mnt/etc/locale.conf
-  sed -i '/^#en_US.UTF-8/s/^#//' /mnt/etc/locale.gen
+  cp -r "${DIR}" /mnt/home/user/.zenixarch
+  chown user:user -R /mnt/home/user/.zenixarch
 
-  ln -sf /usr/share/zoneinfo/America/New_York /mnt/etc/localtime
-
-  cp -r "${DIR}" /mnt/home/user/.zenixarch/
   arch-chroot /mnt DIR=/home/user/.zenixarch bash << 'CHROOT'
   set -euo pipefail
-
-  locale-gen
-  hwclock --systohc
 
   pacman -S --noconfirm --asdep base-devel
   echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
@@ -73,18 +67,24 @@ CHROOT
 }
 
 configuration() {
-  find "${DIR}"/{dotfiles,system} -type f | while read -r src; do
-    args=(-Dm644) dest="/etc/${src#"${DIR}/system/"}"
-    [[ ${src} == *dotfiles* ]] && dest="/home/user/${src#"${DIR}/dotfiles/"}"
+  if ! grep -q '^en_US.UTF-8' /etc/locale.gen; then
+    echo LANG=en_US.UTF-8 > /etc/locale.conf
+    sed -i '/^#en_US.UTF-8/s/^#//' /etc/locale.gen
+    locale-gen
+  fi
+
+  [[ $(readlink /etc/localtime) != *New_York ]] && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime && hwclock --systohc
+
+  find "${DIR}"/{etc,home} -type f | while read -r src; do
+    args=(-Dm644)
+    [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
     [[ ${src} == *overclock.bin ]] && args=(-Dm755)
-    cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
+    cmp -s "${src}" "${src#"${DIR}"}" || install "${args[@]}" "${src}" "${src#"${DIR}"}"
   done
 
   for d in /home/user/.{cache,local}; do
-    [[ $(readlink "${d}") == /tmp ]] || ln -sfn /tmp "${d}"
+    [[ $(readlink "${d}") == /tmp ]] || { ln -sfn /tmp "${d}" && chown user:user "${d}"; }
   done
-
-  chown user:user -R /home/user
 
   if ! grep -q cachyos /etc/pacman.conf; then (
     cd /tmp
@@ -133,8 +133,8 @@ configuration() {
 read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
 [[ ${IK} == IK ]]
 
-umount -R /mnt &> /dev/null || :
-cryptsetup close cryptroot &> /dev/null || :
+umount -R /mnt &>/dev/null || :
+cryptsetup close cryptroot &>/dev/null || :
 
 export -f configuration
 installation

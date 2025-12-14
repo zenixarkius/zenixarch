@@ -34,35 +34,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 
 ```pacmanconf
 .
-├── dotfiles
-│   ├── .config
-│   │   ├── hypr
-│   │   │   ├── hyprland.conf       # Mostly stock minus some minor aesthetic changes
-│   │   │   ├── hyprpaper.conf      # Applies the 2 wallpapers below
-│   │   │   ├── sigiluw.png
-│   │   │   └── sigilw.png
-│   │   └── nvim
-│   │       └── init.lua            # Lazy plugins setup + useful options
-│   ├── .mullvad
-│   │   └── mullvadbrowser
-│   │       ├── user
-│   │       │   └── user.js         # Better defaults for the Mullvad and Tor Browsers
-│   │       ├── installs.ini
-│   │       └── profiles.ini
-│   ├── .bashrc                     # Useful defaults and a few functions/aliases for system maintenance
-│   └── .gitconfig
-├── kernel
-│   ├── config                      # My custom kernel config. It's compiled with llvm/clang, -O3, Full LTO,
-│   │                               # optimized for my 13700k, and eventually will use FDO/PGO. It uses the
-│   │                               # BORE cpu scheduler, CachyOS patchsets, PREEMPT, BBR3 for TCP congestion
-│   │                               # control, 1000Hz tick rate, and other little things that count. It strips
-│   │                               # EVERY unnecessary subsystem and driver EXCEPT the bare minimum required
-│   │                               # for my desktop to work
-│   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
-│   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
-├── misc
-│   └── overclock.c                 # Source of the overclock binary
-├── system
+├── etc
 │   ├── iwd
 │   │   └── main.conf               # Allows iwd to configure the network
 │   ├── systemd
@@ -75,6 +47,35 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │       └── wireguard.service   # Connects to a random VPN config on startup
 │   ├── nftables.conf               # Default-deny firewall rules
 │   └── resolv.conf                 # Just sets the DNS server
+├── home
+│   └── user
+│       ├── .config
+│       │   ├── hypr
+│       │   │   ├── hyprland.conf   # Mostly stock minus some minor aesthetic changes
+│       │   │   ├── hyprpaper.conf  # Applies the 2 wallpapers below
+│       │   │   ├── sigiluw.png
+│       │   │   └── sigilw.png
+│       │   └── nvim
+│       │       └── init.lua        # Lazy plugins setup + useful options
+│       ├── .mullvad
+│       │   └── mullvadbrowser
+│       │       ├── user
+│       │       │   └── user.js     # Better defaults for the Mullvad and Tor Browsers
+│       │       ├── installs.ini
+│       │       └── profiles.ini
+│       ├── .bashrc                 # Useful defaults and a few functions/aliases for system maintenance
+│       └── .gitconfig
+├── kernel
+│   ├── config                      # My custom kernel config. It's compiled with llvm/clang, -O3, Full LTO,
+│   │                               # optimized for my 13700k, and eventually will use FDO/PGO. It uses the
+│   │                               # BORE cpu scheduler, CachyOS patchsets, PREEMPT, BBR3 for TCP congestion
+│   │                               # control, 1000Hz tick rate, and other little things that count. It strips
+│   │                               # EVERY unnecessary subsystem and driver EXCEPT the bare minimum required
+│   │                               # for my desktop to work
+│   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
+│   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
+├── misc
+│   └── overclock.c                 # Source of the overclock binary
 └── zarchinstall                    # The backbone of this project, it can do a full disk install from
                                     # a live ISO and be ran over and over again post-install to
                                     # idempotently reapply the repo's state
