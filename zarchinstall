@@ -2,6 +2,44 @@
 set -euo pipefail
 (( EUID == 0 ))
 
+export PACKAGES=(
+  base
+  btrfs-progs
+  cachyos-keyring
+  cachyos-mirrorlist
+  cachyos-v3-mirrorlist
+  foot
+  git
+  grimblast-git
+  hyprland
+  hyprpaper
+  hyprpicker
+  iptables-nft
+  iwd
+  mullvad-browser-bin
+  neovim
+  pass-otp
+  pipewire-jack
+  pipewire-pulse
+  sbctl
+  signal-desktop
+  ttf-liberation
+  ttf-nerd-fonts-symbols
+  wireguard-tools
+  wl-clipboard
+)
+
+export UNITS=(
+  btrfs-scrub@-.timer
+  fstrim.timer
+  iwd.service
+  nftables.service
+  overclock.service
+  rgb.service
+  systemd-timesyncd.service
+  wireguard.service
+)
+
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 installation() {
@@ -68,7 +106,7 @@ CHROOT
 
 configuration() {
   if ! grep -q '^en_US.UTF-8' /etc/locale.gen; then
-    echo LANG=en_US.UTF-8 > /etc/locale.conf
+    install -Dm644 <(echo LANG=en_US.UTF-8) /etc/locale.conf
     sed -i '/^#en_US.UTF-8/s/^#//' /etc/locale.gen
     locale-gen
   fi
@@ -96,7 +134,7 @@ configuration() {
 
   sed -i '/^#Color/s/^#//' /etc/pacman.conf
 
-  pacman -S --noconfirm --needed base btrfs-progs cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist foot git grimblast-git hyprland hyprpaper hyprpicker iptables-nft iwd mullvad-browser-bin neovim noto-fonts pass-otp pipewire-jack pipewire-pulse sbctl signal-desktop ttf-nerd-fonts-symbols wireguard-tools wl-clipboard
+  pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then (
     cd /tmp
@@ -109,7 +147,6 @@ configuration() {
   sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
   sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
 
-  UNITS=(btrfs-scrub@-.timer fstrim.timer iwd.service nftables.service overclock.service rgb.service systemd-timesyncd.service wireguard.service)
   systemctl enable "${UNITS[@]}"
   systemctl mask systemd-boot-random-seed.service
 
