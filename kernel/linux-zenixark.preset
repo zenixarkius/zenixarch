@@ -1,7 +1,7 @@
-echo 'HOOKS=(base udev encrypt)' > /tmp/mkinitcpio.conf
+echo 'HOOKS=(base systemd sd-encrypt)' > /tmp/mkinitcpio.conf
 ALL_config="/tmp/mkinitcpio.conf"
 ALL_kver="/usr/lib/modules/$(pacman -Qi linux-zenixark | awk '/Version/ {print $3}')-zenixark/vmlinuz"
 
 PRESETS=('default')
 default_uki="/boot/EFI/BOOT/BOOTX64.EFI"
-default_options="--cmdline /dev/null"
+default_options="--no-cmdline"

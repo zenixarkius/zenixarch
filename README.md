@@ -15,7 +15,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
               `+oooooo:                  Kernel: Linux 6.18.1-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
-            `/:-:++oooo+:                Packages: 407 (pacman)
+            `/:-:++oooo+:                Packages: 402 (pacman)
            `/++++/+++++++:               Shell: bash 5.3.8
           `/++++++++++++++:              Display (M34WQ): 3440x1440 in 34", 144 Hz [External]
          `/+++ooooooooooooo/`            Display (LG ULTRAGEAR): 1920x1080 in 24", 144 Hz [External]

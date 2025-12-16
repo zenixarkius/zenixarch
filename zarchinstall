@@ -3,7 +3,7 @@ set -euo pipefail
 (( EUID == 0 ))
 
 export PACKAGES=(
-  base
+  archlinux-keyring
   btrfs-progs
   cachyos-keyring
   cachyos-mirrorlist
@@ -14,6 +14,7 @@ export PACKAGES=(
   hyprland
   hyprpaper
   hyprpicker
+  iproute2
   iptables-nft
   iwd
   mullvad-browser-bin
@@ -21,8 +22,11 @@ export PACKAGES=(
   pass-otp
   pipewire-jack
   pipewire-pulse
+  procps-ng
+  psmisc
   sbctl
   signal-desktop
+  systemd
   ttf-liberation
   ttf-nerd-fonts-symbols
   wireguard-tools
@@ -76,8 +80,7 @@ installation() {
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
 
-  reflector -c US -p https -a 12 -l 20 -f 5 --sort rate --save /etc/pacman.d/mirrorlist
-  pacstrap /mnt base
+  pacstrap /mnt "${PACKAGES[@]}"
 
   genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -87,18 +90,23 @@ installation() {
   cp -r "${DIR}" /mnt/home/user/.zenixarch
   chown user:user -R /mnt/home/user/.zenixarch
 
-  arch-chroot /mnt DIR=/home/user/.zenixarch bash << 'CHROOT'
+  arch-chroot /mnt DIR=/home/user/.zenixarch DISK="/dev/${DISK}2" bash << 'CHROOT'
   set -euo pipefail
 
-  pacman -S --noconfirm --asdep base-devel
-  echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
+  (
+    pacman -S --noconfirm --asdep base-devel
+    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
 
-  sed -i "s|UUID=.*:cryptroot|UUID=$(blkid -s UUID -o value "$(cryptsetup status cryptroot | awk '/device:/ {print $2}')"):cryptroot|" "${DIR}/kernel/config"
-  cp -r "${DIR}/kernel" /tmp/kbuild
-  (cd /tmp/kbuild && sudo -u user makepkg -si --noconfirm)
+    cd "${DIR}/kernel"
+    sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value ${DISK})=cryptroot|" config
+    mkdir "${DIR}/kernel/build"
+    cp * build
+    (cd build
+    sudo -u user makepkg -si --noconfirm)
 
-  pacman -Rcns --noconfirm $(pacman -Qttdq)
-  rm -rf /etc/sudoers.d
+    pacman -Rcns --noconfirm $(pacman -Qttdq)
+    rm -rf /etc/sudoers.d build
+  )
 
   configuration
 CHROOT

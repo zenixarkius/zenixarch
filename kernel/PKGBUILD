@@ -4,8 +4,8 @@ pkgver=6.18.1
 nv=580.119.02
 
 pkgname=linux-zenixark
-depends=(base mkinitcpio nvidia-utils="${nv}")
-makedepends=(bc clang lld llvm perl python)
+depends=(mkinitcpio nvidia-utils="${nv}" systemd)
+makedepends=(bc clang lld llvm perl python tar)
 
 source=(config
         linux-zenixark.preset
@@ -65,11 +65,12 @@ package() {
 }
 
 arch=(x86_64) options=(!strip) pkgrel=1
-sha256sums=('c2218db31b76cf5ead6ed33a676bcefaafdcfe1cd058b2c26ae0972b183bf583'
-            'e4ad01fde09315900601eb9fdb8de8dcffed8e53de429c7455d4a5c93a6fe42f'
+sha256sums=('ed99acbfd0f3024b225194a093350ec699fb613606bf4a138bd375902a7b61f6'
+            '9b8909ffbc8918408dbc2ac9cf234422c2c484c23ba6c46ee1b10e8f501f1ae7'
             'd0a78bf3f0d12aaa10af3b5adcaed5bc767b5b78705e5ef885d5e930b72e25d5'
             '8020f5dfd3ee88aee7a38990d0c3d2afe54751e9a170ba9eadd7ea670138ecd7'
             'fb945473f46e1c873ee8223cd2c62a4bdc19b70323a04229e4a600574cdcee27'
             'f88d72d2cc374ee03e8200055459d5e4fbeb3fd14cbd197a95766839d536b483'
+            '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
             'SKIP'
             'SKIP')
