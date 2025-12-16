@@ -17,17 +17,12 @@ source=(config
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
 
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/{adls_dmc_ver2_01.bin,tgl_guc_70.bin,tgl_huc.bin}
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.{ddc,sfi}
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0{.pnvm,-89.ucode}
-        https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/raw/refs/heads/main/intel-ucode/06-b7-01)
+        git+https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files.git
+        git+https://gitlab.com/kernel-firmware/linux-firmware.git)
 
 prepare() {
   sh NVIDIA-Linux-x86_64-${nv}.run --extract-only
-  mkdir i915 intel{,-ucode}
-  mv adls_dmc_ver2_01.bin tgl_guc_70.bin tgl_huc.bin i915
-  mv ibt-1040-0041.ddc ibt-1040-0041.sfi intel
-  mv 06-b7-01 intel-ucode
+  mv linux-firmware/intel/iwlwifi/* Intel-Linux-Processor-Microcode-Data-Files/intel-ucode linux-firmware
 
   cd linux-${pkgver%.0}
 
@@ -76,12 +71,5 @@ sha256sums=('c2218db31b76cf5ead6ed33a676bcefaafdcfe1cd058b2c26ae0972b183bf583'
             '8020f5dfd3ee88aee7a38990d0c3d2afe54751e9a170ba9eadd7ea670138ecd7'
             'fb945473f46e1c873ee8223cd2c62a4bdc19b70323a04229e4a600574cdcee27'
             'f88d72d2cc374ee03e8200055459d5e4fbeb3fd14cbd197a95766839d536b483'
-            '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
-            '96e426ed7e80f0cc6644ada1928f4d02b163ff59b14b2339aa28a374d65a5b19'
-            '2f1f57a1b23d186f2592318d1e07a1365968932841ccb3e7177c516ba006e2f6'
-            'dbb1316bac13a76427ffa7827e52b5b9affe8a4cadd23dc22e2a54e35c53bdad'
-            'fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077'
-            '77d231c28ff02c1ef0b5e9d0bd6bb10339da13b59ab023ca3f73df1e5ad827db'
-            'b37f038b3467ed568d107a9c1dfd916fa7e8cbd58b2f9bec0c2c53297ccfcab7'
-            'bb7b07de282b01a1f23aecc8f3a725b27ca2a097dcd21d39c788109c19d89385'
-            '67c0d6a111a744101ca91912926e08704949098975726a0197232f2a8b21521b')
+            'SKIP'
+            'SKIP')
