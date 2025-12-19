@@ -17,9 +17,6 @@ source=(config
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
 
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/adls_dmc_ver2_01.bin
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/tgl_guc_70.bin
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/tgl_huc.bin
         https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.ddc
         https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.sfi
         https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0.pnvm
@@ -29,8 +26,7 @@ source=(config
 
 prepare() {
   sh NVIDIA-Linux-x86_64-${nv}.run --extract-only
-  mkdir i915 intel{,-ucode}
-  mv adls_dmc_ver2_01.bin tgl_guc_70.bin tgl_huc.bin i915
+  mkdir intel{,-ucode}
   mv ibt-1040-0041.ddc ibt-1040-0041.sfi intel
   mv 06-b7-01 intel-ucode
 
@@ -76,16 +72,13 @@ package() {
 }
 
 arch=(x86_64) options=(!strip) pkgrel=1
-sha256sums=('9e4980870309cbb35f4847dbfe955a39c06d550f4bc992171afea30b251e501b'
+sha256sums=('9ae101db70ec8f3371c0c2efd9c55a8be3d73fe06f80de5e345d694e7ea3d297'
             '9b8909ffbc8918408dbc2ac9cf234422c2c484c23ba6c46ee1b10e8f501f1ae7'
             '558c6bbab749492b34f99827fe807b0039a744693c21d3a7e03b3a48edaab96a'
             'b9e2f80693781431cc87f4cd29109e133dcecb50a50d6b68d4b3bf2d696bd689'
             '50f8ee57dac77223f0c1290cccde95f1a797c6c530eb5b43d8fd3c51755e29d5'
             'f88d72d2cc374ee03e8200055459d5e4fbeb3fd14cbd197a95766839d536b483'
             '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
-            '96e426ed7e80f0cc6644ada1928f4d02b163ff59b14b2339aa28a374d65a5b19'
-            '2f1f57a1b23d186f2592318d1e07a1365968932841ccb3e7177c516ba006e2f6'
-            'dbb1316bac13a76427ffa7827e52b5b9affe8a4cadd23dc22e2a54e35c53bdad'
             'fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077'
             '77d231c28ff02c1ef0b5e9d0bd6bb10339da13b59ab023ca3f73df1e5ad827db'
             '96acbcc48f11dacbb04faf5d11319d58b889931656049fca0d59caaa01875386'
