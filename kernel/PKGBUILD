@@ -1,7 +1,7 @@
 # shellcheck shell=bash disable=2034,2154,2164
 
-pkgver=6.18.1
-nv=580.119.02
+pkgver=6.18.2
+nv=590.48.01
 
 pkgname=linux-zenixark
 depends=(mkinitcpio nvidia-utils="${nv}" systemd)
@@ -17,12 +17,22 @@ source=(config
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
         https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
 
-        git+https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files.git
-        git+https://gitlab.com/kernel-firmware/linux-firmware.git)
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/adls_dmc_ver2_01.bin
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/tgl_guc_70.bin
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/i915/tgl_huc.bin
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.ddc
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.sfi
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0.pnvm
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0-89.ucode
+
+        https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/raw/refs/heads/main/intel-ucode/06-b7-01)
 
 prepare() {
   sh NVIDIA-Linux-x86_64-${nv}.run --extract-only
-  mv linux-firmware/intel/iwlwifi/* Intel-Linux-Processor-Microcode-Data-Files/intel-ucode linux-firmware
+  mkdir i915 intel{,-ucode}
+  mv adls_dmc_ver2_01.bin tgl_guc_70.bin tgl_huc.bin i915
+  mv ibt-1040-0041.ddc ibt-1040-0041.sfi intel
+  mv 06-b7-01 intel-ucode
 
   cd linux-${pkgver%.0}
 
@@ -36,9 +46,10 @@ prepare() {
 
   cp ../config .config
   make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 olddefconfig
-  diff --color=always ../config .config || read -rp "Press enter to confirm"
 
   make -s kernelrelease > version
+
+  diff --color=always ../config .config || read -rp "Press enter to confirm"
 }
 
 build() {
@@ -65,12 +76,18 @@ package() {
 }
 
 arch=(x86_64) options=(!strip) pkgrel=1
-sha256sums=('ed99acbfd0f3024b225194a093350ec699fb613606bf4a138bd375902a7b61f6'
+sha256sums=('9e4980870309cbb35f4847dbfe955a39c06d550f4bc992171afea30b251e501b'
             '9b8909ffbc8918408dbc2ac9cf234422c2c484c23ba6c46ee1b10e8f501f1ae7'
-            'd0a78bf3f0d12aaa10af3b5adcaed5bc767b5b78705e5ef885d5e930b72e25d5'
-            '8020f5dfd3ee88aee7a38990d0c3d2afe54751e9a170ba9eadd7ea670138ecd7'
-            'fb945473f46e1c873ee8223cd2c62a4bdc19b70323a04229e4a600574cdcee27'
+            '558c6bbab749492b34f99827fe807b0039a744693c21d3a7e03b3a48edaab96a'
+            'b9e2f80693781431cc87f4cd29109e133dcecb50a50d6b68d4b3bf2d696bd689'
+            '50f8ee57dac77223f0c1290cccde95f1a797c6c530eb5b43d8fd3c51755e29d5'
             'f88d72d2cc374ee03e8200055459d5e4fbeb3fd14cbd197a95766839d536b483'
             '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
-            'SKIP'
-            'SKIP')
+            '96e426ed7e80f0cc6644ada1928f4d02b163ff59b14b2339aa28a374d65a5b19'
+            '2f1f57a1b23d186f2592318d1e07a1365968932841ccb3e7177c516ba006e2f6'
+            'dbb1316bac13a76427ffa7827e52b5b9affe8a4cadd23dc22e2a54e35c53bdad'
+            'fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077'
+            '77d231c28ff02c1ef0b5e9d0bd6bb10339da13b59ab023ca3f73df1e5ad827db'
+            '96acbcc48f11dacbb04faf5d11319d58b889931656049fca0d59caaa01875386'
+            'fb49b19880c5b43ab241cce51e29aacf1a45081e68d7e7e63d9485f3a5d057c1'
+            '67c0d6a111a744101ca91912926e08704949098975726a0197232f2a8b21521b')
