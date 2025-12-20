@@ -19,9 +19,6 @@ export HISTFILESIZE=2000
 export HISTSIZE=2000
 export PROMPT_COMMAND="history -a; history -c; history -r; ${PROMPT_COMMAND}"
 
-export MAKEFLAGS=-j$(nproc)
-export PACMAN_AUTH=pkexec
-
 alias mv='mv -i'
 alias cp='cp -i'
 alias rm='rm -iv'
@@ -29,7 +26,7 @@ alias mkdir='mkdir -p'
 alias ls='ls -lha --color=always --group-directories-first'
 alias grep='grep --color=always'
 alias diff='diff --color=always'
-alias fwd='cd $OLDPWD'
+alias fwd='cd ${OLDPWD}'
 
 alias mssd='sudo bash -c "cryptsetup open /dev/sda3 cryptext && mount /dev/mapper/cryptext /mnt"'
 alias ussd='sudo bash -c "umount -R /mnt && cryptsetup close cryptext"'
@@ -38,12 +35,13 @@ alias paccache='sudo bash -c "yes | pacman -Scc;"'
 alias logrotate='sudo bash -c "journalctl --rotate && journalctl --vacuum-time=1s"'
 alias orphans='sudo bash -c "pacman -Rcns \$(pacman -Qttdq); pacman -Runs \$(pacman -Qqd)"'
 
-alias zdisk='sudo du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'
+alias disk='sudo du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /'
 alias ztop='watch -t -n 0.25 "uptime; free -h; cat /proc/cpuinfo | grep MHz; nvidia-smi -q | grep MHz"'
 
 cd() { builtin cd "$@" && ls; }
 
 sudo() { su -p -c "$(printf '%q ' "$@")"; }
+export -f sudo
 
 vpn() { sudo bash -c "ln -sf '/etc/wireguard/configs/$1.conf' /etc/wireguard/wg0.conf && wg-quick down wg0 && wg-quick up wg0"; }
 
