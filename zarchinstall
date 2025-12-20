@@ -80,7 +80,7 @@ installation() {
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
 
-  pacstrap /mnt "${PACKAGES[@]}"
+  pacstrap /mnt archlinux-keyring systemd
 
   genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -90,26 +90,7 @@ installation() {
   cp -r "${DIR}" /mnt/home/user/.zenixarch
   chown user:user -R /mnt/home/user/.zenixarch
 
-  arch-chroot /mnt DIR=/home/user/.zenixarch DISK="/dev/${DISK}2" bash << 'CHROOT'
-  set -euo pipefail
-
-  (
-    pacman -S --noconfirm --asdep base-devel
-    echo "user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/00_user
-
-    cd "${DIR}/kernel"
-    sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value ${DISK})=cryptroot|" config
-    mkdir "${DIR}/kernel/build"
-    cp * build
-    (cd build
-    sudo -u user makepkg -si --noconfirm)
-
-    pacman -Rcns --noconfirm $(pacman -Qttdq)
-    rm -rf /etc/sudoers.d build
-  )
-
-  configuration
-CHROOT
+  arch-chroot /mnt DIR=/home/user/.zenixarch bash -c 'set -euo pipefail; configuration'
 }
 
 configuration() {
@@ -124,13 +105,14 @@ configuration() {
   find "${DIR}"/{etc,home} -type f | while read -r src; do
     args=(-Dm644)
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
-    [[ ${src} == *overclock.bin ]] && args=(-Dm755)
     cmp -s "${src}" "${src#"${DIR}"}" || install "${args[@]}" "${src}" "${src#"${DIR}"}"
   done
 
   for d in /home/user/.{cache,local}; do
     [[ $(readlink "${d}") == /tmp ]] || { ln -sfn /tmp "${d}" && chown user:user "${d}"; }
   done
+
+  sed -i '/^#Color/s/^#//' /etc/pacman.conf
 
   if ! grep -q cachyos /etc/pacman.conf; then (
     cd /tmp
@@ -140,9 +122,31 @@ configuration() {
     yes | ./cachyos-repo.sh || :
   ) fi
 
-  sed -i '/^#Color/s/^#//' /etc/pacman.conf
-
   pacman -S --noconfirm --needed "${PACKAGES[@]}"
+
+  if ! [[ $(pacman -Q linux-zenixark) ]]; then (
+    cd "${DIR}"/linux-zenixark
+    sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value /dev/"$(basename /sys/class/block/"$(readlink /dev/mapper/cryptroot | cut -c4-)"/slaves/*)")=cryptroot|" config
+    pacman -S --noconfirm --needed base-devel bc clang lld llvm perl python tar
+
+    mkdir build
+    cp ./* build
+    (cd build
+    runuser user -c makepkg
+    pacman -U --noconfirm linux-zenixark*.pkg.tar.zst)
+
+    pacman -Rcns --noconfirm base-devel bc clang lld llvm perl python tar
+    rm -rf build
+  ) fi
+
+  if ! [[ $(pacman -Q overclock) ]]; then (
+    cd "${DIR}"/overclock
+    pacman -S --noconfirm --needed base-devel
+    runuser user -c makepkg
+    pacman -U --noconfirm overclock*.pkg.tar.zst
+    pacman -Rcns --noconfirm base-devel
+    rm -rf nvml.h pkg src overclock*.pkg.tar.zst
+  ) fi
 
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then (
     cd /tmp

@@ -41,8 +41,6 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │   └── system
 │   │       ├── getty@.service.d
 │   │       │   └── autologin.conf  # TTY autologin
-│   │       ├── overclock.bin
-│   │       ├── overclock.service   # Applies NVIDIA overclocks via NVML on startup
 │   │       ├── rgb.service         # Sets my static blues on startup
 │   │       └── wireguard.service   # Connects to a random VPN config on startup
 │   ├── nftables.conf               # Default-deny firewall rules
@@ -65,17 +63,14 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │       │       └── profiles.ini
 │       ├── .bashrc                 # Useful defaults and a few functions/aliases for system maintenance
 │       └── .gitconfig
-├── kernel
-│   ├── config                      # My custom kernel config. It's compiled with llvm/clang, -O3, Full LTO,
-│   │                               # optimized for my 13700k, and eventually will use FDO/PGO. It uses the
-│   │                               # BORE cpu scheduler, CachyOS patchsets, PREEMPT, BBR3 for TCP congestion
-│   │                               # control, 1000Hz tick rate, and other little things that count. It strips
-│   │                               # EVERY unnecessary subsystem and driver EXCEPT the bare minimum required
-│   │                               # for my desktop to work
-│   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the custom kernel
-│   └── PKGBUILD                    # Compiles and packages the custom kernel + NVIDIA drivers
-├── misc
-│   └── overclock.c                 # Source of the overclock binary
+├── linux-zenixark
+│   ├── config                      # My highly optimized and minimalist custom kernel config
+│   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the kernel
+│   └── PKGBUILD                    # Compiles and packages the kernel + NVIDIA drivers
+├── overclock
+│   ├── overclock.c                 # Source of the overclock binary
+│   ├── overclock.service           # Applies NVIDIA overclocks via NVML on startup
+│   └── PKGBUILD                    # Compiles and packages the overclock binary
 └── zarchinstall                    # The backbone of this project, it can do a full disk install from
                                     # a live ISO and be ran over and over again post-install to
                                     # idempotently reapply the repo's state

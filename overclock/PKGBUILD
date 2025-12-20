@@ -1,0 +1,20 @@
+# shellcheck shell=bash disable=2034,2154
+
+pkgname=overclock
+depends=(nvidia-utils)
+
+source=(overclock.c
+        overclock.service
+        https://raw.githubusercontent.com/NVIDIA/nvidia-settings/refs/heads/main/src/nvml.h)
+
+build() {
+  gcc -lnvidia-ml -o overclock overclock.c
+}
+
+package() {
+  install -D overclock "${pkgdir}/usr/bin/overclock"
+  install -Dm644 overclock.service "${pkgdir}/usr/lib/systemd/system/overclock.service"
+}
+
+arch=(x86_64) pkgver=1 pkgrel=1
+sha256sums=(SKIP SKIP SKIP)

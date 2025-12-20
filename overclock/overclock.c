@@ -1,8 +1,6 @@
-#include "/opt/cuda/targets/x86_64-linux/include/nvml.h"
+#include "nvml.h"
 #include <stdio.h>
 #include <stdlib.h>
-
-// clang -lnvidia-ml -o overclock.bin overclock.c
 
 int check(nvmlReturn_t status) {
   if (status != NVML_SUCCESS) {
