@@ -3,7 +3,7 @@ set -euo pipefail
 (( EUID == 0 ))
 
 export PACKAGES=(
-  archlinux-keyring
+  base
   btrfs-progs
   cachyos-keyring
   cachyos-mirrorlist
@@ -14,7 +14,6 @@ export PACKAGES=(
   hyprland
   hyprpaper
   hyprpicker
-  iproute2
   iptables-nft
   iwd
   mullvad-browser-bin
@@ -22,11 +21,8 @@ export PACKAGES=(
   pass-otp
   pipewire-jack
   pipewire-pulse
-  procps-ng
-  psmisc
   sbctl
   signal-desktop
-  systemd
   ttf-liberation
   ttf-nerd-fonts-symbols
   wireguard-tools
@@ -80,7 +76,7 @@ installation() {
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
 
-  pacstrap /mnt archlinux-keyring systemd
+  pacstrap /mnt base iptables-nft
 
   genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -127,15 +123,13 @@ configuration() {
   if ! [[ $(pacman -Q linux-zenixark) ]]; then (
     cd "${DIR}"/linux-zenixark
     sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value /dev/"$(basename /sys/class/block/"$(readlink /dev/mapper/cryptroot | cut -c4-)"/slaves/*)")=cryptroot|" config
-    pacman -S --noconfirm --needed base-devel bc clang lld llvm perl python tar
-
+    pacman -S --noconfirm --needed base-devel bc clang lld llvm perl python
     mkdir build
     cp ./* build
     (cd build
     runuser user -c makepkg
     pacman -U --noconfirm linux-zenixark*.pkg.tar.zst)
-
-    pacman -Rcns --noconfirm base-devel bc clang lld llvm perl python tar
+    pacman -Rcns --noconfirm base-devel bc clang lld llvm perl python
     rm -rf build
   ) fi
 

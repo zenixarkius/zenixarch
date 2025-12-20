@@ -5,7 +5,7 @@ nv=590.48.01
 
 pkgname=linux-zenixark
 depends=(mkinitcpio nvidia-utils="${nv}" systemd)
-makedepends=(bc clang lld llvm perl python tar)
+makedepends=(bc clang lld llvm perl python)
 
 source=(config
         linux-zenixark.preset
