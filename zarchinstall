@@ -108,15 +108,11 @@ configuration() {
     [[ $(readlink "${d}") == /tmp ]] || { ln -sfn /tmp "${d}" && chown user:user "${d}"; }
   done
 
-  sed -i '/^#Color/s/^#//' /etc/pacman.conf
-
-  if ! grep -q cachyos /etc/pacman.conf; then (
-    cd /tmp
-    curl https://mirror.cachyos.org/cachyos-repo.tar.xz | tar xJvf -
-    cd cachyos-repo
-    sed -i '/v4-mirrorlist/d' cachyos-repo.sh
-    yes | ./cachyos-repo.sh || :
-  ) fi
+  if ! [[ $(pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist) ]]; then
+    pacman-key --add <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
+    pacman-key --lsign-key F3B607488DB35A47
+    pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
+  fi
 
   pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
@@ -142,13 +138,10 @@ configuration() {
     rm -rf nvml.h pkg src overclock*.pkg.tar.zst
   ) fi
 
-  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then (
-    cd /tmp
+  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
     pacman -Rcns --noconfirm openrgb || :
-    curl -OJ https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
-    pacman -U --noconfirm openrgb*.zst
-    grep -q 'IgnorePkg.*openrgb' /etc/pacman.conf || sed -i 's|^.IgnorePkg.*=|IgnorePkg = openrgb|' /etc/pacman.conf
-  ) fi
+    pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
+  fi
 
   sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
   sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
