@@ -421,9 +421,7 @@ CONFIG_PHYSICAL_ALIGN=0x200000
 CONFIG_HOTPLUG_CPU=y
 # CONFIG_LEGACY_VSYSCALL_XONLY is not set
 CONFIG_LEGACY_VSYSCALL_NONE=y
-CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="rw root=/dev/mapper/cryptroot rootflags=subvol=@ rd.luks.name=7e5be967-b746-4ef9-921f-5b1b84c44347=cryptroot nvidia.NVreg_EnableGpuFirmware=0 nvidia.NVreg_EnableResizableBar=1 nvidia.NVreg_UsePageAttributeTable=1 nvidia.NVreg_InitializeSystemMemoryAllocations=0"
-# CONFIG_CMDLINE_OVERRIDE is not set
+# CONFIG_CMDLINE_BOOL is not set
 # CONFIG_MODIFY_LDT_SYSCALL is not set
 # CONFIG_STRICT_SIGALTSTACK_SIZE is not set
 CONFIG_HAVE_LIVEPATCH=y

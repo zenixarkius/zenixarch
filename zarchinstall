@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+# shellcheck disable=1091
 set -euo pipefail
 (( EUID == 0 ))
 
@@ -112,27 +113,24 @@ configuration() {
 
   pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-  if ! [[ $(pacman -Q linux-zenixark) ]]; then (
-    cd "${DIR}"/linux-zenixark
-    sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value /dev/"$(basename /sys/class/block/"$(readlink /dev/mapper/cryptroot | cut -c4-)"/slaves/*)")=cryptroot|" config
-    pacman -S --noconfirm --needed base-devel bc clang lld llvm perl python
-    mkdir build
-    cp ./* build
-    (cd build
-    runuser user -c makepkg
-    pacman -U --noconfirm linux-zenixark*.pkg.tar.zst)
-    pacman -Rcns --noconfirm base-devel bc clang lld llvm perl python
-    rm -rf build
-  ) fi
+  for p in "${DIR}"/build/*; do
+    if ! [[ $(pacman -Q "${p}") ]]; then (
+      cd "${DIR}/build/${p}"
 
-  if ! [[ $(pacman -Q overclock) ]]; then (
-    cd "${DIR}"/overclock
-    pacman -S --noconfirm --needed base-devel
-    runuser user -c makepkg
-    pacman -U --noconfirm overclock*.pkg.tar.zst
-    pacman -Rcns --noconfirm base-devel
-    rm -rf nvml.h pkg src overclock*.pkg.tar.zst
-  ) fi
+      source PKGBUILD
+      makedepends+=(base-devel)
+
+      pacman -S --noconfirm --needed "${makedepends[@]}"
+      mkdir build
+      cp -r ./* build
+
+      runuser user -c 'makepkg -D build'
+      pacman -U --noconfirm build/"${p}"*.pkg.tar.zst
+
+      pacman -Rcns --noconfirm "${makedepends[@]}"
+      rm -rf build
+    ) fi
+  done
 
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
     pacman -Rcns --noconfirm openrgb || :
