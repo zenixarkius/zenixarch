@@ -90,19 +90,15 @@ installation() {
 }
 
 configuration() {
-  if ! grep -q '^en_US.UTF-8' /etc/locale.gen; then
-    install -Dm644 <(echo LANG=en_US.UTF-8) /etc/locale.conf
-    sed -i '/^#en_US.UTF-8/s/^#//' /etc/locale.gen
-    locale-gen
-  fi
-
-  [[ $(readlink /etc/localtime) != *New_York ]] && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime && hwclock --systohc
-
   find "${DIR}"/{etc,home} -type f | while read -r src; do
     args=(-Dm644)
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
     cmp -s "${src}" "${src#"${DIR}"}" || install "${args[@]}" "${src}" "${src#"${DIR}"}"
   done
+
+  grep -q '^en_US.UTF-8' /etc/locale.gen || locale-gen
+
+  [[ $(readlink /etc/localtime) != *New_York ]] && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime && hwclock --systohc
 
   for d in /home/user/.{cache,local}; do
     [[ $(readlink "${d}") == /tmp ]] || { ln -sfn /tmp "${d}" && chown user:user "${d}"; }
