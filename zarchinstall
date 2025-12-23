@@ -3,50 +3,12 @@
 set -euo pipefail
 (( EUID == 0 ))
 
-export PACKAGES=(
-  base
-  btrfs-progs
-  cachyos-keyring
-  cachyos-mirrorlist
-  cachyos-v3-mirrorlist
-  foot
-  git
-  grimblast-git
-  hyprland
-  hyprpaper
-  hyprpicker
-  iptables-nft
-  iwd
-  mullvad-browser-bin
-  neovim
-  pass-otp
-  pipewire-jack
-  pipewire-pulse
-  sbctl
-  signal-desktop
-  ttf-liberation
-  ttf-nerd-fonts-symbols
-  wireguard-tools
-  wl-clipboard
-)
-
-export UNITS=(
-  btrfs-scrub@-.timer
-  fstrim.timer
-  iwd.service
-  nftables.service
-  overclock.service
-  rgb.service
-  systemd-timesyncd.service
-  wireguard.service
-)
-
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 installation() {
-  nvme id-ns -H "/dev/${DISK}" | grep -q '1.*4096' && nvme format --lbaf=1 --force "/dev/${DISK}"
+  nvme id-ns -H "/dev/${DISK}" | grep -q '1.*4096' && nvme format -l 1 --force "/dev/${DISK}"
 
-  sgdisk --zap-all "/dev/${DISK}"
+  sgdisk -Z "/dev/${DISK}"
   sgdisk -g "/dev/${DISK}"
   sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs "/dev/${DISK}"
   sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs "/dev/${DISK}"
@@ -91,65 +53,50 @@ installation() {
 }
 
 configuration() {
-  find "${DIR}"/{etc,home} -type f | while read -r src; do
-    args=(-Dm644)
+  mapfile -t PACKAGES < "${DIR}/lists/packages.list"
+  mapfile -t SERVICES < "${DIR}/lists/services.list"
+
+  find "${DIR}"/rootfs -type f | while read -r src; do
+    args=(-Dm644) dest=${src#"${DIR}/rootfs"}
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
-    cmp -s "${src}" "${src#"${DIR}"}" || install "${args[@]}" "${src}" "${src#"${DIR}"}"
-  done
-
-  grep -q '^en_US.UTF-8' /etc/locale.gen || locale-gen
-
-  [[ $(readlink /etc/localtime) != *New_York ]] && ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime && hwclock --systohc
-
-  for d in /home/user/.{cache,local}; do
-    [[ $(readlink "${d}") == /tmp ]] || { ln -sfn /tmp "${d}" && chown user:user "${d}"; }
+    [[ ${src} == *.link && $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}" && continue
+    cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
 
   if ! [[ $(pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist) ]]; then
-    pacman-key --add <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
+    pacman-key -a <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
     pacman-key --lsign-key F3B607488DB35A47
     pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
   fi
 
-  pacman -S --noconfirm --needed "${PACKAGES[@]}"
+  pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
 
   for p in "${DIR}"/build/*; do
-    if ! [[ $(pacman -Q "${p}") ]]; then (
-      cd "${DIR}/build/${p}"
-
-      source PKGBUILD
+    if ! [[ $(pacman -Q "$(basename "${p}")") ]]; then (
+      cd "${p}"
+      . PKGBUILD
       makedepends+=(base-devel)
-
       pacman -S --noconfirm --needed "${makedepends[@]}"
-      mkdir build
-      cp -r ./* build
-
-      runuser user -c 'makepkg -D build'
-      pacman -U --noconfirm build/"${p}"*.pkg.tar.zst
-
+      mkdir .build
+      cp -r ./* .build
+      runuser user -c 'makepkg -D .build'
+      pacman -U --noconfirm .build/*.pkg.tar.zst
       pacman -Rcns --noconfirm "${makedepends[@]}"
-      rm -rf build
+      rm -rf .build
     ) fi
   done
 
-  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
-    pacman -Rcns --noconfirm openrgb || :
-    pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
-  fi
+  . "${DIR}/lists/quirks.sh"
 
-  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
-  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
+  systemctl enable "${SERVICES[@]}"
 
-  systemctl enable "${UNITS[@]}"
-  systemctl mask systemd-boot-random-seed.service
-
-  for svc in $(systemctl list-unit-files --type=service --state=enabled --no-legend | awk '{print $1}'); do
-    [[ ${UNITS[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
+  for svc in $(systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}'); do
+    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
   done
 
-  if sbctl status | grep -q 'Setup.*Enabled' && [[ -e /dev/tpm0 ]]; then
+  if sbctl status | grep -q 'Setup.*Enabled'; then
     sbctl create-keys
-    sbctl enroll-keys --tpm-eventlog
+    sbctl enroll-keys -t
     sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
   fi
 
@@ -163,8 +110,7 @@ configuration() {
 read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
 [[ ${IK} == IK ]]
 
-umount -R /mnt &>/dev/null || :
-cryptsetup close cryptroot &>/dev/null || :
+trap 'umount -R /mnt &>/dev/null || :; cryptsetup close cryptroot &>/dev/null || :' EXIT
 
 export -f configuration
 installation

@@ -3,7 +3,7 @@
 # Zenixark's Arch Linux Desktop Setup
 **My KISS privacy and performance focused Arch installation fully reproducible in one command**
 
-NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so I decided to write a bash script loosely based on them to make my setup reproducible.
+NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so I decided to write a bash script loosely based on them to make my setup portable and reproducible.
 
 </div>
 <br />
@@ -13,7 +13,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
                  .o+`                    -------------
                 `ooo/                    OS: Arch Linux x86_64
                `+oooo:                   Host: Z790 AORUS ELITE AX DDR4
-              `+oooooo:                  Kernel: Linux 6.18.1-1-zenixark
+              `+oooooo:                  Kernel: Linux 6.18.2-1-zenixark
               -+oooooo+:                 Uptime: -1 hours, 0 mins
             `/:-:++oooo+:                Packages: 402 (pacman)
            `/++++/+++++++:               Shell: bash 5.3.8
@@ -33,47 +33,61 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 ---
 
 ```pacmanconf
+
 .
-├── etc
-│   ├── iwd
-│   │   └── main.conf               # Allows iwd to configure the network
-│   ├── systemd
-│   │   └── system
-│   │       ├── getty@.service.d
-│   │       │   └── autologin.conf  # TTY autologin
-│   │       ├── rgb.service         # Sets my static blues on startup
-│   │       └── wireguard.service   # Connects to a random VPN config on startup
-│   ├── nftables.conf               # Default-deny firewall rules
-│   └── resolv.conf                 # Just sets the DNS server
-├── home
-│   └── user
-│       ├── .config
-│       │   ├── hypr
-│       │   │   ├── hyprland.conf   # Mostly stock minus some minor aesthetic changes
-│       │   │   ├── hyprpaper.conf  # Applies the 2 wallpapers below
-│       │   │   ├── sigiluw.png
-│       │   │   └── sigilw.png
-│       │   └── nvim
-│       │       └── init.lua        # Lazy plugins setup + useful options
-│       ├── .mullvad
-│       │   └── mullvadbrowser
-│       │       ├── user
-│       │       │   └── user.js     # Better defaults for the Mullvad and Tor Browsers
-│       │       ├── installs.ini
-│       │       └── profiles.ini
-│       ├── .bashrc                 # Useful defaults and a few functions/aliases for system maintenance
-│       └── .gitconfig
-├── linux-zenixark
-│   ├── config                      # My highly optimized and minimalist custom kernel config
-│   ├── linux-zenixark.preset       # UKI preset with the minimum hooks required to boot the kernel
-│   └── PKGBUILD                    # Compiles and packages the kernel + NVIDIA drivers
-├── overclock
-│   ├── overclock.c                 # Source of the overclock binary
-│   ├── overclock.service           # Applies NVIDIA overclocks via NVML on startup
-│   └── PKGBUILD                    # Compiles and packages the overclock binary
-└── zarchinstall                    # The backbone of this project, it can do a full disk install from
-                                    # a live ISO and be ran over and over again post-install to
-                                    # idempotently reapply the repo's state
+├── build
+│   ├── linux-zenixark
+│   │   ├── PKGBUILD
+│   │   ├── config
+│   │   └── linux-zenixark.preset
+│   └── overclock
+│       ├── PKGBUILD
+│       ├── overclock.c
+│       └── overclock.service
+├── lists
+│   ├── packages.list
+│   ├── quirks.sh
+│   └── services.list
+├── rootfs
+│   ├── etc
+│   │   ├── iwd
+│   │   │   └── main.conf
+│   │   ├── kernel
+│   │   │   └── cmdline
+│   │   ├── systemd
+│   │   │   └── system
+│   │   │       ├── getty@.service.d
+│   │   │       │   └── autologin.conf
+│   │   │       ├── rgb.service
+│   │   │       └── wireguard.service
+│   │   ├── locale.conf
+│   │   ├── locale.gen
+│   │   ├── localtime.link
+│   │   ├── nftables.conf
+│   │   ├── pacman.conf
+│   │   └── resolv.conf
+│   └── home
+│       └── user
+│           ├── .config
+│           │   ├── hypr
+│           │   │   ├── hyprland.conf
+│           │   │   ├── hyprpaper.conf
+│           │   │   ├── sigiluw.png
+│           │   │   └── sigilw.png
+│           │   └── nvim
+│           │       ├── init.lua
+│           │       └── lazy-lock.json
+│           ├── .mullvad
+│           │   └── mullvadbrowser
+│           │       ├── user
+│           │       │   └── user.js
+│           │       ├── installs.ini
+│           │       └── profiles.ini
+│           ├── .bashrc
+│           ├── .cache.link
+│           ├── .gitconfig
+│           └── .local.link
+└── zarchinstall
 ```
 
 ---
@@ -84,11 +98,13 @@ Don't care? Quite literally just:
 
 1. Boot into an Arch ISO and connect to the internet
 2. `pacman -Sy git`
-3. `git clone https://zenixark.com/projects/zenixarch.git`
-4. `DISK='<disk, like nvme0n1>' PASS='<a strong pass>' ./*/z*`
+3. `git clone https://zenixark.com/projects/zenixarch.git` or `git clone https://github.com/zenixarkius/zenixarch.git`
+4. `DISK=<disk, like nvme0n1> PASS='<a strong pass>' ./*/z*`
 5. `reboot`
 
-This is the only right way to install this setup... you *could* `git clone` and run zarchinstall on an existing installation, but I don't recommend it.
+(DISK and PASS only matter on a full install, they can be omitted post-install)
+
+This is the only right way to install this setup... you *could* `git clone` and just run `./zarchinstall` on an existing installation, but I don't recommend it.
 
 ---
 
