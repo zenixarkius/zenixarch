@@ -4,4 +4,4 @@ ALL_kver="/usr/lib/modules/$(pacman -Qi linux-zenixark | awk '/Version/ {print $
 
 PRESETS=('default')
 default_uki="/boot/EFI/BOOT/BOOTX64.EFI"
-default_options="--no-cmdline"
+default_options="--cmdline /etc/kernel/cmdline"

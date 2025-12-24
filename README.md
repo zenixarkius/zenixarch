@@ -54,12 +54,15 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │   │   └── main.conf
 │   │   ├── kernel
 │   │   │   └── cmdline
+│   │   ├── pam.d
+│   │   │   └── login
 │   │   ├── systemd
 │   │   │   └── system
 │   │   │       ├── getty@.service.d
 │   │   │       │   └── autologin.conf
 │   │   │       ├── rgb.service
 │   │   │       └── wireguard.service
+│   │   ├── doas.conf
 │   │   ├── locale.conf
 │   │   ├── locale.gen
 │   │   ├── localtime.link

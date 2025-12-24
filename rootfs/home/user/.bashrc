@@ -8,7 +8,7 @@ bind '"\e[B":history-search-forward'
 
 shopt -s histappend cdspell autocd cmdhist histverify
 
-export PS1='\w \$ '
+export PS1='\[\e[94m\]\[\e[1m\]\u\[\e[0m\]@\h \[\e[1m\]\w\[\e[0m\] \$ '
 export FUNCNEST=100
 
 export EDITOR=nvim
@@ -33,27 +33,27 @@ cd() { builtin cd "$@" && ls; }
 sudo() { su -p -c "$(printf '%q ' "$@")"; }
 export -f sudo
 
-mssd() { sudo bash -c "cryptsetup open /dev/sd*3 cryptext && mount /dev/mapper/cryptext /mnt"; }
-ussd() { sudo bash -c "umount -R /mnt && cryptsetup close cryptext"; }
+mssd() { doas bash -c "cryptsetup open /dev/sd*3 cryptext && mount /dev/mapper/cryptext /mnt"; }
+ussd() { doas bash -c "umount -R /mnt && cryptsetup close cryptext"; }
 
-disk() { sudo du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /; }
+disk() { doas du -h -d1 --exclude=/proc --exclude=/sys --exclude=/dev --exclude=/run --exclude=/tmp --exclude=/mnt /; }
 ztop() { watch -t -n 0.25 "uptime; free -h; cat /proc/cpuinfo | grep MHz; nvidia-smi -q | grep MHz"; }
 
-search() { sudo find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print; }
+search() { doas find / \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp \) -prune -o -iname "*$**" -print; }
 
 clean() {
   case "$1" in
-    cache) sudo bash -c "yes | pacman -Scc;" ;;
-    logs) sudo bash -c "journalctl --rotate && journalctl --vacuum-time=1s" ;;
-    orphans) sudo bash -c 'pacman -Rcns $(pacman -Qttdq); pacman -Runs $(pacman -Qqd)' ;;
+    cache) doas bash -c "yes | pacman -Scc;" ;;
+    logs) doas bash -c "journalctl --rotate && journalctl --vacuum-time=1s" ;;
+    orphans) doas bash -c 'pacman -Rcns $(pacman -Qttdq); pacman -Runs $(pacman -Qqd)' ;;
     history) tac ~/.bash_history | awk '!seen[$0]++' | tac > ~/.bash_history.new && command mv ~/.bash_history.new ~/.bash_history ;;
   esac
 }
 
 vpn() {
   case "$1" in
-    set) sudo bash -c "ln -sf '/etc/wireguard/configs/$2.conf' /etc/wireguard/wg0.conf && wg-quick down wg0 && wg-quick up wg0" ;;
-    shuffle) sudo bash -c 'wg show &>/dev/null && wg-quick down wg0; ln -sf "$(find /etc/wireguard/configs -name "*.conf" -print | shuf -n 1)" /etc/wireguard/wg0.conf && wg-quick up wg0' ;;
+    set) doas bash -c "ln -sf '/etc/wireguard/configs/$2.conf' /etc/wireguard/wg0.conf && wg-quick down wg0 && wg-quick up wg0" ;;
+    shuffle) doas bash -c 'wg show &>/dev/null && wg-quick down wg0; ln -sf "$(find /etc/wireguard/configs -name "*.conf" -print | shuf -n 1)" /etc/wireguard/wg0.conf && wg-quick up wg0' ;;
     show) curl -s https://am.i.mullvad.net/connected ;;
   esac
 }

@@ -17,8 +17,8 @@ installation() {
 
   mkfs.fat -F 32 "/dev/${DISK}1"
 
-  echo "${PASS}" | cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 "/dev/${DISK}2"
-  echo "${PASS}" | cryptsetup open "/dev/${DISK}2" cryptroot
+  cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 "/dev/${DISK}2" <<< "${PASS}"
+  cryptsetup open "/dev/${DISK}2" cryptroot <<< "${PASS}"
 
   mkfs.btrfs -f /dev/mapper/cryptroot
 
@@ -44,7 +44,8 @@ installation() {
   genfstab -U /mnt >> /mnt/etc/fstab
 
   useradd -R /mnt -m user
-  chpasswd -R /mnt <<< "root:${PASS}"
+  chpasswd -R /mnt <<< "root:${PASS}"$'\n'"user:${PASS}"
+  passwd -R /mnt -l root
 
   cp -r "${DIR}" /mnt/home/user/.zenixarch
   chown user:user -R /mnt/home/user/.zenixarch
@@ -59,6 +60,7 @@ configuration() {
   find "${DIR}"/rootfs -type f | while read -r src; do
     args=(-Dm644) dest=${src#"${DIR}/rootfs"}
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
+    [[ ${src} == */doas.conf ]] && args=(-Dm400)
     [[ ${src} == *.link && $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}" && continue
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
