@@ -45,7 +45,6 @@ installation() {
 
   useradd -R /mnt -m user
   chpasswd -R /mnt <<< "root:${PASS}"$'\n'"user:${PASS}"
-  passwd -R /mnt -l root
 
   cp -r "${DIR}" /mnt/home/user/.zenixarch
   chown user:user -R /mnt/home/user/.zenixarch
@@ -60,7 +59,6 @@ configuration() {
   find "${DIR}"/rootfs -type f | while read -r src; do
     args=(-Dm644) dest=${src#"${DIR}/rootfs"}
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
-    [[ ${src} == */doas.conf ]] && args=(-Dm400)
     [[ ${src} == *.link && $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}" && continue
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
