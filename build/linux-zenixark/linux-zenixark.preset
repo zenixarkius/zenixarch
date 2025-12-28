@@ -1,7 +1,8 @@
+PRESETS=(UKI)
 echo 'HOOKS=(base systemd sd-encrypt)' > /tmp/mkinitcpio.conf
-ALL_config="/tmp/mkinitcpio.conf"
-ALL_kver="/usr/lib/modules/$(pacman -Qi linux-zenixark | awk '/Version/ {print $3}')-zenixark/vmlinuz"
 
-PRESETS=('default')
-default_uki="/boot/EFI/BOOT/BOOTX64.EFI"
-default_options="--cmdline /etc/kernel/cmdline"
+UKI_kver=/usr/lib/modules/$(pacman -Qi linux-zenixark | awk '/Version/ {print $3}')-zenixark/vmlinuz
+UKI_config=/tmp/mkinitcpio.conf
+UKI_uki=/boot/EFI/BOOT/BOOTX64.EFI
+UKI_cmdline=/etc/kernel/cmdline
+UKI_splash=/usr/share/systemd/bootctl/splash-arch.bmp
