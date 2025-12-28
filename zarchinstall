@@ -25,20 +25,17 @@ installation() {
   mount /dev/mapper/cryptroot /mnt
   btrfs su cr /mnt/@
   btrfs su cr /mnt/@home
-  btrfs su cr /mnt/@var_log
-  btrfs su cr /mnt/@var_cache
-  btrfs su cr /mnt/@var_lib_libvirt_images
+  btrfs su cr /mnt/@var
   btrfs su se /mnt/@
-  chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
   umount /mnt
 
   mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
-  mkdir -p /mnt/{boot,home,var/{log,cache,lib/libvirt/images}}
+  mkdir -p /mnt/{boot,home}
   mount -o defaults,nodev,nosuid,noexec,umask=0077 "/dev/${DISK}1" /mnt/boot
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
-  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_log /dev/mapper/cryptroot /mnt/var/log
-  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_cache /dev/mapper/cryptroot /mnt/var/cache
-  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var_lib_libvirt_images /dev/mapper/cryptroot /mnt/var/lib/libvirt/images
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var /dev/mapper/cryptroot /mnt/var
+  mkdir -p /mnt/var/{log,lib/libvirt/images}
+  chattr +C /mnt/var/{log,lib/libvirt/images}
 
   pacstrap /mnt base iptables-nft
 
