@@ -51,8 +51,8 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   ├── etc
 │   │   ├── iwd
 │   │   │   └── main.conf
-│   │   ├── kernel
-│   │   │   └── cmdline
+│   │   ├── modprobe.d
+│   │   │   └── nvidia.conf
 │   │   ├── systemd
 │   │   │   └── system
 │   │   │       ├── getty@.service.d

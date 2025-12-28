@@ -11,7 +11,7 @@ installation() {
   sgdisk -Z "/dev/${DISK}"
   sgdisk -g "/dev/${DISK}"
   sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs "/dev/${DISK}"
-  sgdisk -I -n 2:0:0 -t 2:8300 -c 2:rootfs "/dev/${DISK}"
+  sgdisk -I -n 2:0:0 -t 2:8304 -c 2:rootfs "/dev/${DISK}"
 
   [[ ${DISK} =~ [0-9]$ ]] && DISK="${DISK}p"
 
@@ -98,10 +98,6 @@ configuration() {
     sbctl enroll-keys -t
     sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
   fi
-
-  # TODO: See if I can use systemd's gpt automounting instead of hardcoding disk stuff
-  sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value /dev/"$(basename /sys/class/block/"$(readlink /dev/mapper/cryptroot | cut -c4-)"/slaves/*)")=cryptroot|" /etc/kernel/cmdline
-  mkinitcpio -P || :
 
   # OpenRGB is completely broken for me after this version for some reason
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
