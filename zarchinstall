@@ -58,7 +58,7 @@ configuration() {
     args=(-Dm644) dest=${src#"${DIR}/rootfs"}
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
     if [[ ${src} == *.link ]]; then
-      [[ $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}"
+      [[ $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}" && chown user:user "${dest%.link}"
       continue
     fi
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
@@ -99,6 +99,10 @@ configuration() {
     sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
   fi
 
+  # TODO: See if I can use systemd's gpt automounting instead of hardcoding disk stuff
+  sed -i "s|name=.*=cryptroot|name=$(blkid -s UUID -o value /dev/"$(basename /sys/class/block/"$(readlink /dev/mapper/cryptroot | cut -c4-)"/slaves/*)")=cryptroot|" /etc/kernel/cmdline
+  mkinitcpio -P || :
+
   # OpenRGB is completely broken for me after this version for some reason
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
     pacman -Rcns --noconfirm openrgb || :
@@ -110,9 +114,6 @@ configuration() {
 
   # Fixes 'which not found' when using pass otp
   sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
-
-  # Stops systemd from creating a random seed file in /boot as systemd-boot isn't being used anyways
-  systemctl mask systemd-boot-random-seed.service
 
   exit
 }
