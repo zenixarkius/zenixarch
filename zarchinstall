@@ -28,6 +28,7 @@ installation() {
   btrfs su cr /mnt/@var_log
   btrfs su cr /mnt/@var_cache
   btrfs su cr /mnt/@var_lib_libvirt_images
+  btrfs su se /mnt/@
   chattr +C /mnt/@var_{log,cache,lib_libvirt_images}
   umount /mnt
 
