@@ -46,7 +46,6 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │       └── overclock.service
 ├── lists
 │   ├── packages.list
-│   ├── quirks.sh
 │   └── services.list
 ├── rootfs
 │   ├── etc

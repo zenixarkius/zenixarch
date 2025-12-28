@@ -49,7 +49,7 @@ installation() {
   cp -r "${DIR}" /mnt/home/user/.zenixarch
   chown user:user -R /mnt/home/user/.zenixarch
 
-  arch-chroot /mnt DIR=/home/user/.zenixarch bash -c 'set -euo pipefail; configuration'
+  arch-chroot -r /mnt DIR=/home/user/.zenixarch bash -c 'set -euo pipefail; configuration'
 }
 
 configuration() {
@@ -59,7 +59,10 @@ configuration() {
   find "${DIR}"/rootfs -type f | while read -r src; do
     args=(-Dm644) dest=${src#"${DIR}/rootfs"}
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
-    [[ ${src} == *.link && $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}" && continue
+    if [[ ${src} == *.link ]]; then
+      [[ $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}"
+      continue
+    fi
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
 
@@ -86,8 +89,6 @@ configuration() {
     ) fi
   done
 
-  . "${DIR}/lists/quirks.sh"
-
   systemctl enable "${SERVICES[@]}"
 
   for svc in $(systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}'); do
@@ -99,6 +100,21 @@ configuration() {
     sbctl enroll-keys -t
     sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
   fi
+
+  # OpenRGB is completely broken for me after this version for some reason
+  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
+    pacman -Rcns --noconfirm openrgb || :
+    pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
+  fi
+
+  # Fixes Steam (and I assume other chromium/electron web apps) creating ~/.pulse-cookie
+  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
+
+  # Fixes 'which not found' when using pass otp
+  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
+
+  # Stops systemd from creating a random seed file in /boot as systemd-boot isn't being used anyways
+  systemctl mask systemd-boot-random-seed.service
 
   exit
 }
