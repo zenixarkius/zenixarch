@@ -1,6 +1,6 @@
 # shellcheck shell=bash disable=2155
 
-[[ -z ${DISPLAY} && $(tty) == /dev/tty1 && ${HYPRLAND} != y ]] && hyprland && export HYPRLAND=y
+[[ -z ${DISPLAY} && $(tty) == /dev/tty1 && ${HYPRLAND} != y ]] && start-hyprland && export HYPRLAND=y
 { (( EUID == 0 )) || [[ $- != *i* ]]; } && return
 
 bind '"\e[A":history-search-backward'
