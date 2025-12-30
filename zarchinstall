@@ -1,12 +1,9 @@
 #!/usr/bin/bash
 # shellcheck disable=1091
-set -euo pipefail
-(( EUID == 0 ))
-
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 installation() {
-  nvme id-ns -H "/dev/${DISK}" | grep -q '1.*4096' && nvme format -l 1 --force "/dev/${DISK}"
+  nvme id-ns -H "/dev/${DISK}" | grep -q '1.*4096' \
+    && nvme format -l 1 --force "/dev/${DISK}"
 
   sgdisk -Z "/dev/${DISK}"
   sgdisk -g "/dev/${DISK}"
@@ -18,26 +15,26 @@ installation() {
   mkfs.fat -F 32 "/dev/${DISK}1"
 
   cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 "/dev/${DISK}2" <<< "${PASS}"
-  cryptsetup open "/dev/${DISK}2" cryptroot <<< "${PASS}"
+  cryptsetup open "/dev/${DISK}2" root <<< "${PASS}"
 
-  mkfs.btrfs -f /dev/mapper/cryptroot
+  mkfs.btrfs -f /dev/mapper/root
 
-  mount /dev/mapper/cryptroot /mnt
+  mount /dev/mapper/root /mnt
   btrfs su cr /mnt/@
   btrfs su cr /mnt/@home
   btrfs su cr /mnt/@var
   btrfs su se /mnt/@
   umount /mnt
 
-  mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/cryptroot /mnt
+  mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/root /mnt
   mkdir -p /mnt/{boot,home}
   mount -o defaults,nodev,nosuid,noexec,umask=0077 "/dev/${DISK}1" /mnt/boot
-  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/cryptroot /mnt/home
-  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var /dev/mapper/cryptroot /mnt/var
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/root /mnt/home
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var /dev/mapper/root /mnt/var
   mkdir -p /mnt/var/{log,lib/libvirt/images}
   chattr +C /mnt/var/{log,lib/libvirt/images}
 
-  pacstrap /mnt base iptables-nft
+  pacstrap /mnt
 
   genfstab -U /mnt >> /mnt/etc/fstab
 
@@ -51,46 +48,53 @@ installation() {
 }
 
 configuration() {
-  mapfile -t PACKAGES < "${DIR}/lists/packages.list"
-  mapfile -t SERVICES < "${DIR}/lists/services.list"
+  mapfile -t packages < "${DIR}/lists/packages.list"
+  mapfile -t services < "${DIR}/lists/services.list"
 
   find "${DIR}"/rootfs -type f | while read -r src; do
     args=(-Dm644) dest=${src#"${DIR}/rootfs"}
     [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
+
     if [[ ${src} == *.link ]]; then
-      [[ $(readlink "${dest%.link}") != $(<"${src}") ]] && ln -sfn "$(<"${src}")" "${dest%.link}" && chown user:user "${dest%.link}"
+      [[ $(readlink "${dest%.link}") != $(<"${src}") ]] \
+        && ln -sfn "$(<"${src}")" "${dest%.link}" \
+        && chown user:user "${dest%.link}"
       continue
     fi
+
     cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
   done
 
-  if ! [[ $(pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist) ]]; then
+  if ! pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
     pacman-key -a <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
     pacman-key --lsign-key F3B607488DB35A47
     pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
   fi
 
-  pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
+  pacman -Syu --noconfirm --needed "${packages[@]}"
 
   for p in "${DIR}"/build/*; do
-    if ! [[ $(pacman -Q "$(basename "${p}")") ]]; then (
-      cd "${p}"
+    if ! pacman -Q "$(basename "${p}")" &>/dev/null; then
+      (cd "${p}"
+
       . PKGBUILD
       makedepends+=(base-devel)
       pacman -S --noconfirm --needed "${makedepends[@]}"
+
       mkdir .build
       cp -r ./* .build
       runuser user -c 'makepkg -D .build'
       pacman -U --noconfirm .build/*.pkg.tar.zst
+
       pacman -Rcns --noconfirm "${makedepends[@]}"
-      rm -rf .build
-    ) fi
+      rm -rf .build)
+    fi
   done
 
-  systemctl enable "${SERVICES[@]}"
+  systemctl enable "${services[@]}"
 
-  for svc in $(systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}'); do
-    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
+  systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
+    [[ ${services[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
   done
 
   if sbctl status | grep -q 'Setup.*Enabled'; then
@@ -114,14 +118,18 @@ configuration() {
   exit
 }
 
+set -euo pipefail
+(( EUID == 0 ))
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 [[ -d /run/archiso ]] || configuration
 
 : "${DISK}:?" "${PASS}:?"
-
 read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
 [[ ${IK} == IK ]]
 
-trap 'umount -R /mnt &>/dev/null || :; cryptsetup close cryptroot &>/dev/null || :' EXIT
+trap 'umount -R /mnt &>/dev/null || :; cryptsetup close root &>/dev/null || :' EXIT
 
 export -f configuration
 installation

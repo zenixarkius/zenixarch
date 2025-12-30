@@ -1,36 +1,37 @@
 # shellcheck shell=bash disable=2034,2154,2164
 
-pkgver=6.18.2
-nv=590.48.01
+pkgver=$(curl -s https://www.kernel.org/finger_banner | awk '/stable version/ {print $NF}')
+_nvver=$(curl -s https://www.nvidia.com/en-us/drivers/unix/ | awk -F '>'\|'<' '/New.Feature/ {print $25}' | head -n 1)
+echo -e "Linux ${pkgver}\nNVIDIA ${_nvver}"
 
 pkgname=linux-zenixark
-depends=(mkinitcpio nvidia-utils="${nv}" systemd)
+depends=(iptables-nft mkinitcpio nvidia-utils="${_nvver}" systemd)
 makedepends=(bc clang lld llvm perl python)
 
-source=(config
-        linux-zenixark.preset
+source=(
+  config
+  linux-zenixark.preset
 
-        https://cdn.kernel.org/pub/linux/kernel/v"${pkgver%%.*}".x/linux-"${pkgver%.0}".tar.xz
-        https://us.download.nvidia.com/XFree86/Linux-x86_64/"${nv}"/NVIDIA-Linux-x86_64-"${nv}".run
+  "https://cdn.kernel.org/pub/linux/kernel/v${pkgver%%.*}.x/linux-${pkgver%.0}.tar.xz"
+  "https://us.download.nvidia.com/XFree86/Linux-x86_64/${_nvver}/NVIDIA-Linux-x86_64-${_nvver}.run"
 
-        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/all/0001-cachyos-base-all.patch
-        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
-        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
+  "https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/all/0001-cachyos-base-all.patch"
+  "https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/sched/0001-bore-cachy.patch"
+  "https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/${pkgver%.*}/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch"
 
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.ddc
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.sfi
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0.pnvm
-        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0-89.ucode
-
-        https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/raw/refs/heads/main/intel-ucode/06-b7-01)
+  https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.{ddc,sfi}
+  https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0{.pnvm,-89.ucode}
+  https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/raw/refs/heads/main/intel-ucode/06-b7-01
+)
 
 prepare() {
-  sh NVIDIA-Linux-x86_64-${nv}.run --extract-only
+  sh "NVIDIA-Linux-x86_64-${_nvver}.run" --extract-only
+
   mkdir intel{,-ucode}
-  mv ibt-1040-0041.ddc ibt-1040-0041.sfi intel
+  mv ibt-1040-0041.{ddc,sfi} intel
   mv 06-b7-01 intel-ucode
 
-  cd linux-${pkgver%.0}
+  cd "linux-${pkgver%.0}"
 
   echo -${pkgrel} > localversion.10-pkgrel
   echo ${pkgname#linux} > localversion.20-pkgname
@@ -41,7 +42,7 @@ prepare() {
   done
 
   cp ../config .config
-  make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 olddefconfig
+  make LLVM=1 LLVM_IAS=1 olddefconfig
 
   make -s kernelrelease > version
 
@@ -49,31 +50,34 @@ prepare() {
 }
 
 build() {
-  cd linux-${pkgver%.0}
-  make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 -j"$(nproc)" all
+  cd "linux-${pkgver%.0}"
+  make LLVM=1 LLVM_IAS=1 -j"$(nproc)" all
 
-  cd "${srcdir}/NVIDIA-Linux-x86_64-${nv}/kernel"
-  make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 KERNEL_UNAME=${pkgver}-${pkgname#linux-} SYSSRC="${srcdir}/linux-${pkgver%.0}" SYSOUT="${srcdir}/linux-${pkgver%.0}" NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j"$(nproc)" modules
+  cd "${srcdir}/NVIDIA-Linux-x86_64-${_nvver}/kernel"
+  make LLVM=1 LLVM_IAS=1 KERNEL_UNAME="${pkgver}-${pkgname#linux-}" SYSSRC="${srcdir}/linux-${pkgver%.0}" SYSOUT="${srcdir}/linux-${pkgver%.0}" CC=clang LD=ld.lld NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j"$(nproc)" modules
 }
 
 package() {
-  cd linux-${pkgver%.0}
+  cd "linux-${pkgver%.0}"
   modulesdir=${pkgdir}/usr/lib/modules/$(<version)
 
   install -Dm644 "$(make -s image_name)" "${modulesdir}/vmlinuz"
   install -Dm644 <(echo ${pkgname}) "${modulesdir}/pkgbase"
   install -Dm644 "${srcdir}/linux-zenixark.preset" "${pkgdir}/etc/mkinitcpio.d/linux-zenixark.preset"
+  install -Dm644 "${srcdir}/NVIDIA-Linux-x86_64-${_nvver}/kernel/"*.ko "${modulesdir}"
 
-  install -Dm644 "${srcdir}"/NVIDIA-Linux-x86_64-${nv}/kernel/*.ko "${modulesdir}"
-  find "${modulesdir}" -name '*.ko' -print -exec llvm-strip --strip-debug {} \; -exec scripts/sign-file sha512 certs/signing_key.pem certs/signing_key.x509 {} \; -exec zstd --rm -19 -T0 {} +
+  find "${modulesdir}" -name '*.ko' -print \
+    -exec llvm-strip --strip-debug {} \; \
+    -exec scripts/sign-file sha512 certs/signing_key.pem certs/signing_key.x509 {} \; \
+    -exec zstd --rm -19 -T0 {} +
 
-  ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="${pkgdir}"/usr INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
-  rm "${modulesdir}"/build
+  ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="${pkgdir}/usr" INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
+  rm "${modulesdir}/build"
 }
 
-arch=(x86_64) options=(!strip) pkgrel=1
+pkgrel=1 arch=(x86_64) options=(!strip)
 sha256sums=('9409ae207a90367db1ddb74442263bba9b41ba834f039d3683005a21829e98d5'
-            '194366374332777238546afe17de33af7445c539dc5a39ba32f62e9c2b7d17e2'
+            'ca5a9e390f1a511fd3715c53d6b232af574fef04343e684c470afc57ce3d20af'
             '558c6bbab749492b34f99827fe807b0039a744693c21d3a7e03b3a48edaab96a'
             'b9e2f80693781431cc87f4cd29109e133dcecb50a50d6b68d4b3bf2d696bd689'
             '50f8ee57dac77223f0c1290cccde95f1a797c6c530eb5b43d8fd3c51755e29d5'
