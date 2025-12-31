@@ -1,9 +1,9 @@
 # shellcheck shell=bash disable=2034,2154,2164
 
-pkgname=linux-zenixark
-_knver=6.19-rc3
+pkgver=6.18.2
 _nvver=590.48.01
 
+pkgname=linux-zenixark
 depends=(iptables-nft mkinitcpio nvidia-utils="${_nvver}" systemd)
 makedepends=(bc clang lld llvm perl python)
 provides=(NTSYNC-MODULE WIREGUARD-MODULE)
@@ -12,12 +12,12 @@ source=(
   config
   linux-zenixark.preset
 
-  https://git.kernel.org/torvalds/t/linux-"${_knver}".tar.gz
+  https://cdn.kernel.org/pub/linux/kernel/v"${pkgver%%.*}".x/linux-"${pkgver%.0}".tar.xz
   https://us.download.nvidia.com/XFree86/Linux-x86_64/"${_nvver}"/NVIDIA-Linux-x86_64-"${_nvver}".run
 
-  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${_knver%-*}"/all/0001-cachyos-base-all.patch
-  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${_knver%-*}"/sched/0001-bore-cachy.patch
-  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${_knver%-*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
+  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/all/0001-cachyos-base-all.patch
+  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
+  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
 
   https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.{ddc,sfi}
   https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0{.pnvm,-89.ucode}
@@ -31,10 +31,7 @@ prepare() {
   mv ibt-1040-0041.{ddc,sfi} intel
   mv 06-b7-01 intel-ucode
 
-  cd linux-${_knver}
-
-  echo -${pkgrel} > localversion.10-pkgrel
-  echo ${pkgname#linux} > localversion.20-pkgname
+  cd linux-${pkgver%.0} 
 
   for src in "${source[@]}"; do
     if [[ ${src} == *nvidia* ]]; then _nvo=(-d "${srcdir}"/NVIDIA-Linux-x86_64-"${_nvver}"/kernel); else _nvo=(); fi
@@ -44,21 +41,23 @@ prepare() {
   cp ../config .config
   make LLVM=1 LLVM_IAS=1 olddefconfig
 
+  echo -${pkgrel} > localversion.10-pkgrel
+  echo ${pkgname#linux} > localversion.20-pkgname
   make -s kernelrelease > version
 
   diff --color=always ../config .config || read -rp "Press enter to confirm"
 }
 
 build() {
-  cd linux-${_knver}
+  cd linux-${pkgver%.0}
   make LLVM=1 LLVM_IAS=1 -j"$(nproc)" all
 
   cd "${srcdir}"/NVIDIA-Linux-x86_64-${_nvver}/kernel
-  make LLVM=1 LLVM_IAS=1 KERNEL_UNAME=${_knver}-${pkgname#linux-} SYSSRC="${srcdir}"/linux-${_knver} SYSOUT="${srcdir}"/linux-${_knver} CC=clang LD=ld.lld NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j"$(nproc)" modules
+  make LLVM=1 LLVM_IAS=1 KERNEL_UNAME=${pkgver}-${pkgname#linux-} SYSSRC="${srcdir}"/linux-${pkgver%.0} SYSOUT="${srcdir}"/linux-${pkgver%.0} CC=clang LD=ld.lld NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j"$(nproc)" modules
 }
 
 package() {
-  cd linux-${_knver}
+  cd linux-${pkgver}
   modulesdir=${pkgdir}/usr/lib/modules/$(<version)
 
   install -Dm644 "$(make -s image_name)" "${modulesdir}"/vmlinuz
@@ -75,13 +74,13 @@ package() {
   rm "${modulesdir}"/build
 }
 
-pkgver=${_knver/-/.0_} pkgrel=1 arch=(x86_64) options=(!strip)
-sha256sums=('64f0f94ccbbb87bbbba3ba98833076c79c65104405c10171e71ed579678a0001'
-            '98cbcef8d813fbfb6be3cf80544d4948c0adba4f5e309c8dc5a04fdb8e288115'
-            '4d26f2c2e326444613ffd3dab3ff3c42083e68e5146d34c272086327d264ee1a'
+pkgrel=1 arch=(x86_64) options=(!strip)
+sha256sums=('9409ae207a90367db1ddb74442263bba9b41ba834f039d3683005a21829e98d5'
+            'e5ca5ac9025995e6cb038085e3e1f7661e446d3170fd4ad5b37039515fdc97cf'
+            '558c6bbab749492b34f99827fe807b0039a744693c21d3a7e03b3a48edaab96a'
             'b9e2f80693781431cc87f4cd29109e133dcecb50a50d6b68d4b3bf2d696bd689'
-            'a76a1484b5bd526fbab8e27e0f18146ed219130ef08baec1572e583c873fe29d'
-            'a7339eebb2cf88e531e78a9be7bb90ed0df07d24e9bface267ddc176194bd563'
+            '50f8ee57dac77223f0c1290cccde95f1a797c6c530eb5b43d8fd3c51755e29d5'
+            'f88d72d2cc374ee03e8200055459d5e4fbeb3fd14cbd197a95766839d536b483'
             '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
             'fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077'
             '77d231c28ff02c1ef0b5e9d0bd6bb10339da13b59ab023ca3f73df1e5ad827db'
