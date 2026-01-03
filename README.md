@@ -27,7 +27,7 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
   `/ossssso+/:-        -:/+osssso+-      GPU 1: NVIDIA GeForce RTX 4070 [Discrete]
  `+sso+:-`                 `.-/+oso:     GPU 2: Intel UHD Graphics 770 @ 1.60 GHz [Integrated]
 `++:.                           `-/+/    Memory: 1.45 GiB / 31.11 GiB (5%)
-.`                                 `/    Disk (/): 1.97 GiB / 931.00 GiB (0%) - btrfs
+.`                                 `/    Disk (/): 1.94 GiB / 931.00 GiB (0%) - btrfs
 ```
 
 ---
@@ -35,15 +35,10 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 ```pacmanconf
 
 .
-├── build
-│   ├── linux-zenixark
-│   │   ├── PKGBUILD
-│   │   ├── config
-│   │   └── linux-zenixark.preset
-│   └── overclock
-│       ├── PKGBUILD
-│       ├── overclock.c
-│       └── overclock.service
+├── kernel
+│   ├── PKGBUILD
+│   ├── config
+│   └── linux-zenixark.preset
 ├── lists
 │   ├── packages.list
 │   └── services.list
@@ -57,6 +52,8 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   │   │   └── system
 │   │   │       ├── getty@.service.d
 │   │   │       │   └── autologin.conf
+│   │   │       ├── nvclock.bin
+│   │   │       ├── nvclock.service
 │   │   │       ├── rgb.service
 │   │   │       └── wireguard.service
 │   │   ├── locale.conf
@@ -106,5 +103,7 @@ Don't care? Quite literally just:
 This is the only right way to install this setup... you *could* `git clone` and just run `./zarchinstall` on an existing installation, but I don't recommend it.
 
 ---
+
+The source of the `nvclock` binary can be found [here](https://zenixark.com/projects/nvclock).
 
 Licensed as [MIT](./LICENSE.md) so you can fork and destroy it however you want for all I care.

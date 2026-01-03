@@ -2,20 +2,19 @@
 # shellcheck disable=1091
 
 installation() {
-  nvme id-ns -H "/dev/${DISK}" | grep -q '1.*4096' \
-    && nvme format -l 1 --force "/dev/${DISK}"
+  nvme id-ns -H /dev/"${DISK}" | grep -q '1.*4096' && nvme format -l 1 --force /dev/"${DISK}"
 
-  sgdisk -Z "/dev/${DISK}"
-  sgdisk -g "/dev/${DISK}"
-  sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs "/dev/${DISK}"
-  sgdisk -I -n 2:0:0 -t 2:8304 -c 2:rootfs "/dev/${DISK}"
+  sgdisk -Z /dev/"${DISK}"
+  sgdisk -g /dev/"${DISK}"
+  sgdisk -I -n 1:0:+512M -t 1:ef00 -c 1:bootfs /dev/"${DISK}"
+  sgdisk -I -n 2:0:0 -t 2:8304 -c 2:rootfs /dev/"${DISK}"
 
-  [[ ${DISK} =~ [0-9]$ ]] && DISK="${DISK}p"
+  [[ ${DISK} =~ [0-9]$ ]] && DISK=${DISK}p
 
-  mkfs.fat -F 32 "/dev/${DISK}1"
+  mkfs.fat -F 32 /dev/"${DISK}"1
 
-  cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 "/dev/${DISK}2" <<< "${PASS}"
-  cryptsetup open "/dev/${DISK}2" root <<< "${PASS}"
+  cryptsetup -q luksFormat -h sha512 -i 5000 -s 512 /dev/"${DISK}"2 <<< "${PASS}"
+  cryptsetup open /dev/"${DISK}"2 root <<< "${PASS}"
 
   mkfs.btrfs -f /dev/mapper/root
 
@@ -28,7 +27,7 @@ installation() {
 
   mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/root /mnt
   mkdir -p /mnt/{boot,home}
-  mount -o defaults,nodev,nosuid,noexec,umask=0077 "/dev/${DISK}1" /mnt/boot
+  mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"${DISK}"1 /mnt/boot
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/root /mnt/home
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var /dev/mapper/root /mnt/var
   mkdir -p /mnt/var/{log,lib/libvirt/images}
@@ -39,7 +38,7 @@ installation() {
   genfstab -U /mnt >> /mnt/etc/fstab
 
   useradd -R /mnt -m user
-  chpasswd -R /mnt <<< "root:${PASS}"$'\n'"user:${PASS}"
+  chpasswd -R /mnt <<< root:"${PASS}"$'\n'user:"${PASS}"
 
   cp -r "${DIR}" /mnt/home/user/.zenixarch
   chown user:user -R /mnt/home/user/.zenixarch
@@ -48,21 +47,20 @@ installation() {
 }
 
 configuration() {
-  mapfile -t packages < "${DIR}/lists/packages.list"
-  mapfile -t services < "${DIR}/lists/services.list"
+  mapfile -t packages < "${DIR}"/lists/packages.list
+  mapfile -t services < "${DIR}"/lists/services.list
 
   find "${DIR}"/rootfs -type f | while read -r src; do
-    args=(-Dm644) dest=${src#"${DIR}/rootfs"}
-    [[ ${src} == */home/user/* ]] && args+=(-o user -g user)
+    args=(-Dm644) dest=${src#"${DIR}"/rootfs}
+    [[ ${src} == *.bin ]] && args=(-Dm755)
 
     if [[ ${src} == *.link ]]; then
-      [[ $(readlink "${dest%.link}") != $(<"${src}") ]] \
-        && ln -sfn "$(<"${src}")" "${dest%.link}" \
-        && chown user:user "${dest%.link}"
-      continue
+      [[ $(readlink "${dest%.link}") == $(<"${src}") ]] || ln -sfn "$(<"${src}")" "${dest%.link}"
+    else
+      cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
     fi
 
-    cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
+    [[ ${src} == */home/user/* ]] && chown user:user "${dest%.link}"
   done
 
   if ! pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
@@ -73,29 +71,22 @@ configuration() {
 
   pacman -Syu --noconfirm --needed "${packages[@]}"
 
-  for p in "${DIR}"/build/*; do
-    if ! pacman -Q "$(basename "${p}")" &>/dev/null; then
-      (cd "${p}"
-
-      . PKGBUILD
-      makedepends+=(base-devel)
-      pacman -S --noconfirm --needed "${makedepends[@]}"
-
-      mkdir .build
-      cp -r ./* .build
-      runuser user -c 'makepkg -D .build'
-      pacman -U --noconfirm .build/*.pkg.tar.zst
-
-      pacman -Rcns --noconfirm "${makedepends[@]}"
-      rm -rf .build)
-    fi
-  done
-
   systemctl enable "${services[@]}"
 
   systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
     [[ ${services[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
   done
+
+  if ! pacman -Q linux-zenixark &>/dev/null; then
+    (cp -r "${DIR}"/kernel /tmp/linux-zenixark
+    cd /tmp/linux-zenixark
+    . PKGBUILD
+    makedepends+=(base-devel)
+    pacman -S --noconfirm --needed "${makedepends[@]}"
+    runuser user -c makepkg
+    pacman -U --noconfirm .build/linux-zenixark*.pkg.tar.zst
+    pacman -Rcns --noconfirm "${makedepends[@]}")
+  fi
 
   if sbctl status | grep -q 'Setup.*Enabled'; then
     sbctl create-keys

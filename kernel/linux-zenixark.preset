@@ -1,5 +1,5 @@
 PRESETS=(UKI)
-echo 'HOOKS=(base systemd sd-encrypt)' > /tmp/mkinitcpio.conf
+echo 'HOOKS=(systemd sd-encrypt)' > /tmp/mkinitcpio.conf
 
 UKI_kver=/usr/lib/modules/$(pacman -Q linux-zenixark | awk '{print $2}')-zenixark/vmlinuz
 UKI_config=/tmp/mkinitcpio.conf

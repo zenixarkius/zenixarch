@@ -6,7 +6,7 @@ _nvver=590.48.01
 pkgname=linux-zenixark
 depends=(iptables-nft mkinitcpio nvidia-utils="${_nvver}" systemd)
 makedepends=(bc clang lld llvm perl python)
-provides=(NTSYNC-MODULE WIREGUARD-MODULE)
+provides=(NTSYNC-MODULE NVIDIA-MODULE WIREGUARD-MODULE)
 
 source=(
   config
