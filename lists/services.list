@@ -1,8 +1,0 @@
-btrfs-scrub@-.timer
-fstrim.timer
-iwd.service
-nftables.service
-nvclock.service
-rgb.service
-systemd-timesyncd.service
-wireguard.service

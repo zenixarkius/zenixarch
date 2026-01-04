@@ -1,6 +1,49 @@
 #!/usr/bin/bash
 # shellcheck disable=1091
 
+set -euo pipefail
+(( EUID == 0 ))
+
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+export PACKAGES=(
+  base
+  btrfs-progs
+  cachyos-keyring
+  cachyos-mirrorlist
+  cachyos-v3-mirrorlist
+  foot
+  git
+  grimblast-git
+  hyprland
+  hyprpaper
+  hyprpicker
+  iptables-nft
+  iwd
+  mullvad-browser-bin
+  neovim
+  pass-otp
+  pipewire-jack
+  pipewire-pulse
+  sbctl
+  signal-desktop
+  ttf-liberation
+  ttf-nerd-fonts-symbols
+  wireguard-tools
+  wl-clipboard
+)
+
+export SERVICES=(
+  btrfs-scrub@-.timer
+  fstrim.timer
+  iwd.service
+  nftables.service
+  nvclock.service
+  rgb.service
+  systemd-timesyncd.service
+  wireguard.service
+)
+
 installation() {
   nvme id-ns -H /dev/"${DISK}" | grep -q '1.*4096' && nvme format -l 1 --force /dev/"${DISK}"
 
@@ -47,9 +90,6 @@ installation() {
 }
 
 configuration() {
-  mapfile -t packages < "${DIR}"/lists/packages.list
-  mapfile -t services < "${DIR}"/lists/services.list
-
   find "${DIR}"/rootfs -type f | while read -r src; do
     args=(-Dm644) dest=${src#"${DIR}"/rootfs}
     [[ ${src} == *.bin ]] && args=(-Dm755)
@@ -69,12 +109,12 @@ configuration() {
     pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
   fi
 
-  pacman -Syu --noconfirm --needed "${packages[@]}"
+  pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
 
-  systemctl enable "${services[@]}"
+  systemctl enable "${SERVICES[@]}"
 
   systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
-    [[ ${services[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
+    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
   done
 
   if ! pacman -Q linux-zenixark &>/dev/null; then
@@ -84,7 +124,7 @@ configuration() {
     makedepends+=(base-devel)
     pacman -S --noconfirm --needed "${makedepends[@]}"
     runuser user -c makepkg
-    pacman -U --noconfirm .build/linux-zenixark*.pkg.tar.zst
+    pacman -U --noconfirm .build/linux-zenixark*.pkg.tar.zst || :
     pacman -Rcns --noconfirm "${makedepends[@]}")
   fi
 
@@ -109,18 +149,16 @@ configuration() {
   exit
 }
 
-set -euo pipefail
-(( EUID == 0 ))
+if [[ -d /run/archiso ]]; then
+  : "${DISK}:?" "${PASS}:?"
 
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
+  [[ ${IK} == IK ]]
 
-[[ -d /run/archiso ]] || configuration
+  trap 'umount -R /mnt &>/dev/null || :; cryptsetup close root &>/dev/null || :' EXIT
 
-: "${DISK}:?" "${PASS}:?"
-read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
-[[ ${IK} == IK ]]
-
-trap 'umount -R /mnt &>/dev/null || :; cryptsetup close root &>/dev/null || :' EXIT
-
-export -f configuration
-installation
+  export -f configuration
+  installation
+else
+  configuration
+fi

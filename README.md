@@ -39,9 +39,6 @@ NixOS is cool, but it's not Arch... Ansible is cool, but it's scope creep... so 
 │   ├── PKGBUILD
 │   ├── config
 │   └── linux-zenixark.preset
-├── lists
-│   ├── packages.list
-│   └── services.list
 ├── rootfs
 │   ├── etc
 │   │   ├── iwd
