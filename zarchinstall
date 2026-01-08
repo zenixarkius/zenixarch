@@ -93,58 +93,52 @@ configuration() {
   find "${DIR}"/rootfs -type f | while read -r src; do
     ( args=(-Dm644) dest=${src#"${DIR}"/rootfs}
     [[ ${src} == *.bin ]] && args=(-Dm755)
-
     if [[ ${src} == *.link ]]; then
       [[ $(readlink "${dest%.link}") == $(<"${src}") ]] || ln -sfn "$(<"${src}")" "${dest%.link}"
     else
       cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
     fi
-
     [[ ${src} == */home/user/* ]] && chown user:user "${dest%.link}" ) &
   done
 
-  if ! pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
+  if pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
+    pacman -S --noconfirm --needed "${PACKAGES[@]}"
+  else
     pacman-key -a <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
     pacman-key --lsign-key F3B607488DB35A47
     pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
+    pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
   fi
 
-  pacman -S --noconfirm --needed "${PACKAGES[@]}"
-
   systemctl enable "${SERVICES[@]}" &
-
   systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
-    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}" &
+    ( [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}" ) &
   done
 
   if ! pacman -Q linux-zenixark &>/dev/null; then
-    (cp -r "${DIR}"/kernel /tmp/linux-zenixark
+    ( cp -r "${DIR}"/kernel /tmp/linux-zenixark
     cd /tmp/linux-zenixark
     . PKGBUILD
     makedepends+=(base-devel)
     pacman -S --noconfirm --needed "${makedepends[@]}"
     runuser user -c makepkg
-    pacman -U --noconfirm .build/linux-zenixark*.pkg.tar.zst || :
-    pacman -Rcns --noconfirm "${makedepends[@]}")
-  fi
+    pacman -U --noconfirm linux-zenixark*.pkg.tar.zst || :
+    pacman -Rcns --noconfirm "${makedepends[@]}" )
+  fi &
 
   if sbctl status | grep -q 'Setup.*Enabled'; then
     sbctl create-keys
     sbctl enroll-keys -t
-    sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+    sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI || :
   fi &
 
-  # OpenRGB is completely broken for me after this version for some reason
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
-    pacman -Rcns --noconfirm openrgb || :
+    pacman -Rcns --noconfirm openrgb || : # OpenRGB is completely broken for me after this version for some reason
     pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
   fi &
 
-  # Fixes Steam (and I assume other chromium/electron web apps) creating ~/.pulse-cookie
-  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf &
-
-  # Fixes 'which not found' when using pass otp
-  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash &
+  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf & # Fixes Steam creating ~/.pulse-cookie
+  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash & # Fixes pass-otp 'which not found'
 
   wait
   exit
@@ -156,7 +150,7 @@ if [[ -d /run/archiso ]]; then
   read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
   [[ ${IK} == IK ]]
 
-  trap 'umount -R /mnt &>/dev/null || :; cryptsetup close root &>/dev/null || :' EXIT
+  trap '( umount -R /mnt; cryptsetup close root ) &>/dev/null' EXIT
 
   export -f configuration
   installation
