@@ -4,25 +4,23 @@ pkgver=6.18.3
 _nvver=590.48.01
 
 pkgname=linux-zenixark
-depends=(iptables-nft mkinitcpio nvidia-utils="${_nvver}" systemd)
+depends=(mkinitcpio nvidia-utils="${_nvver}" systemd)
 makedepends=(bc clang lld llvm perl python)
 provides=(NTSYNC-MODULE NVIDIA-MODULE WIREGUARD-MODULE)
 
-source=(
-  config
-  linux-zenixark.preset
+source=(config
+        linux-zenixark.preset
 
-  https://cdn.kernel.org/pub/linux/kernel/v"${pkgver%%.*}".x/linux-"${pkgver%.0}".tar.xz
-  https://us.download.nvidia.com/XFree86/Linux-x86_64/"${_nvver}"/NVIDIA-Linux-x86_64-"${_nvver}".run
+        https://cdn.kernel.org/pub/linux/kernel/v"${pkgver%%.*}".x/linux-"${pkgver%.0}".tar.xz
+        https://us.download.nvidia.com/XFree86/Linux-x86_64/"${_nvver}"/NVIDIA-Linux-x86_64-"${_nvver}".run
 
-  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/all/0001-cachyos-base-all.patch
-  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
-  https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/all/0001-cachyos-base-all.patch
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/sched/0001-bore-cachy.patch
+        https://raw.githubusercontent.com/CachyOS/kernel-patches/refs/heads/master/"${pkgver%.*}"/misc/nvidia/0001-Enable-atomic-kernel-modesetting-by-default.patch
 
-  https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.{ddc,sfi}
-  https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0{.pnvm,-89.ucode}
-  https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/raw/refs/heads/main/intel-ucode/06-b7-01
-)
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/ibt-1040-0041.{ddc,sfi}
+        https://gitlab.com/kernel-firmware/linux-firmware/-/raw/main/intel/iwlwifi/iwlwifi-so-a0-gf-a0{.pnvm,-89.ucode}
+        https://github.com/intel/Intel-Linux-Processor-Microcode-Data-Files/raw/refs/heads/main/intel-ucode/06-b7-01)
 
 prepare() {
   sh NVIDIA-Linux-x86_64-${_nvver}.run --extract-only
