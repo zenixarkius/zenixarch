@@ -69,7 +69,7 @@ installation() {
   umount /mnt
 
   mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/root /mnt
-  mkdir -p /mnt/{boot,home}
+  mkdir -p /mnt/{boot,home,var}
   mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"${DISK}"1 /mnt/boot
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/root /mnt/home
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var /dev/mapper/root /mnt/var
@@ -78,7 +78,7 @@ installation() {
 
   pacstrap /mnt
 
-  genfstab -U /mnt >> /mnt/etc/fstab
+  genfstab -U /mnt >> /mnt/etc/fstab &
 
   useradd -R /mnt -m user
   chpasswd -R /mnt <<< root:"${PASS}"$'\n'user:"${PASS}"
@@ -91,7 +91,7 @@ installation() {
 
 configuration() {
   find "${DIR}"/rootfs -type f | while read -r src; do
-    args=(-Dm644) dest=${src#"${DIR}"/rootfs}
+    ( args=(-Dm644) dest=${src#"${DIR}"/rootfs}
     [[ ${src} == *.bin ]] && args=(-Dm755)
 
     if [[ ${src} == *.link ]]; then
@@ -100,7 +100,7 @@ configuration() {
       cmp -s "${src}" "${dest}" || install "${args[@]}" "${src}" "${dest}"
     fi
 
-    [[ ${src} == */home/user/* ]] && chown user:user "${dest%.link}"
+    [[ ${src} == */home/user/* ]] && chown user:user "${dest%.link}" ) &
   done
 
   if ! pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
@@ -109,12 +109,12 @@ configuration() {
     pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
   fi
 
-  pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
+  pacman -S --noconfirm --needed "${PACKAGES[@]}"
 
-  systemctl enable "${SERVICES[@]}"
+  systemctl enable "${SERVICES[@]}" &
 
   systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
-    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
+    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}" &
   done
 
   if ! pacman -Q linux-zenixark &>/dev/null; then
@@ -132,20 +132,21 @@ configuration() {
     sbctl create-keys
     sbctl enroll-keys -t
     sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-  fi
+  fi &
 
   # OpenRGB is completely broken for me after this version for some reason
   if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
     pacman -Rcns --noconfirm openrgb || :
     pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
-  fi
+  fi &
 
   # Fixes Steam (and I assume other chromium/electron web apps) creating ~/.pulse-cookie
-  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf
+  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf &
 
   # Fixes 'which not found' when using pass otp
-  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash
+  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash &
 
+  wait
   exit
 }
 
