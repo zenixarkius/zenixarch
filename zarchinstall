@@ -7,41 +7,37 @@ set -euo pipefail
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 export PACKAGES=(
-  base
-  btrfs-progs
-  cachyos-keyring
-  cachyos-mirrorlist
-  cachyos-v3-mirrorlist
-  foot
-  git
-  grimblast-git
-  hyprland
-  hyprpaper
-  hyprpicker
-  iptables-nft
-  iwd
-  mullvad-browser-bin
-  neovim
-  pass-otp
-  pipewire-jack
-  pipewire-pulse
-  sbctl
-  signal-desktop
-  ttf-liberation
-  ttf-nerd-fonts-symbols
-  wireguard-tools
-  wl-clipboard
+  sys-fs/btrfs-progs
+  gui-apps/foot
+  dev-vcs/git
+  #grimblast-git
+  gui-wm/hyprland
+  gui-apps/hyprpaper
+  #hyprpicker
+  net-firewall/nftables
+  net-wireless/iwd
+  #mullvad-browser-bin
+  app-editors/neovim
+  app-admin/pass-otp
+  #pipewire-jack
+  #pipewire-pulse
+  app-crypt/sbctl
+  net-im/signal-desktop-bin
+  #ttf-liberation
+  media-fonts/symbols-nerd-font
+  net-vpn/wireguard-tools
+  #wl-clipboard
 )
 
 export SERVICES=(
-  btrfs-scrub@-.timer
-  fstrim.timer
-  iwd.service
-  nftables.service
-  nvclock.service
-  rgb.service
-  systemd-timesyncd.service
-  wireguard.service
+  #btrfs-scrub@-.timer
+  #fstrim.timer
+  #iwd.service
+  #nftables.service
+  #nvclock.service
+  #rgb.service
+  #systemd-timesyncd.service
+  #wireguard.service
 )
 
 installation() {
@@ -68,25 +64,28 @@ installation() {
   btrfs su se /mnt/@
   umount /mnt
 
-  mount -o defaults,compress-force=zstd,noatime,subvol=@ /dev/mapper/root /mnt
+  mount -o defaults,compress-force=zstd,noatime /dev/mapper/root /mnt
   mkdir -p /mnt/{boot,home,var}
   mount -o defaults,nodev,nosuid,noexec,umask=0077 /dev/"${DISK}"1 /mnt/boot
   mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@home /dev/mapper/root /mnt/home
-  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,noexec,subvol=@var /dev/mapper/root /mnt/var
+  mount -o defaults,compress-force=zstd,noatime,nodev,nosuid,subvol=@var /dev/mapper/root /mnt/var
   mkdir -p /mnt/var/{log,lib/libvirt/images}
   chattr +C /mnt/var/{log,lib/libvirt/images}
 
-  pacstrap /mnt
+  curl -s https://distfiles.gentoo.org/releases/amd64/autobuilds/$(
+    curl -s https://distfiles.gentoo.org/releases/amd64/autobuilds/latest-stage3-amd64-nomultilib-openrc.txt | awk '/stage3/ {print $1}'
+    ) | tar xJpvf - --xattrs-include='*.*' --numeric-owner -C /mnt
 
+  ln -s /run/NetworkManager/resolv.conf /mnt/etc/resolv.conf
   genfstab -U /mnt >> /mnt/etc/fstab
 
   useradd -R /mnt -m user
   chpasswd -R /mnt <<< root:"${PASS}"$'\n'user:"${PASS}"
 
   cp -r "${DIR}" /mnt/home/user/.zenixarch
-  chown user:user -R /mnt/home/user/.zenixarch
+  chown 1000:1000 -R /mnt/home/user/.zenixarch
 
-  arch-chroot -r /mnt DIR=/home/user/.zenixarch bash -c 'set -euo pipefail; configuration'
+  arch-chroot /mnt env DIR=/home/user/.zenixarch bash -c 'set -euo pipefail; emerge-webrsync; configuration'
 }
 
 configuration() {
@@ -101,47 +100,47 @@ configuration() {
     [[ ${src} == */home/user/* ]] && chown user:user "${dest%.link}"
   done
 
-  if pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
-    pacman -S --noconfirm --needed "${PACKAGES[@]}"
-  else
-    pacman-key -a <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
-    pacman-key --lsign-key F3B607488DB35A47
-    pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
-    pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
-  fi
-
-  systemctl enable "${SERVICES[@]}"
-  systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
-    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
-  done
-
-  if ! pacman -Q linux-zenixark &>/dev/null; then
-  ( cp -r "${DIR}"/kernel /tmp/linux-zenixark
-    cd /tmp/linux-zenixark
-    . PKGBUILD
-    makedepends+=(base-devel)
-    pacman -S --noconfirm --needed "${makedepends[@]}"
-    runuser user -c makepkg
-    pacman -U --noconfirm linux-zenixark*.pkg.tar.zst || :
-    pacman -Rcns --noconfirm "${makedepends[@]}" )
-  fi
-
-  if sbctl status | grep -q 'Setup.*Enabled'; then
-    sbctl create-keys
-    sbctl enroll-keys -t
-    sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
-  fi
-
-  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
-    pacman -Rcns --noconfirm openrgb || : # OpenRGB is completely broken for me after this version for some reason
-    pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
-  fi
-
-  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf # Fixes Steam creating ~/.pulse-cookie
-  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash # Fixes pass-otp 'which not found'
+#  if pacman -Q cachyos-keyring cachyos-mirrorlist cachyos-v3-mirrorlist &>/dev/null; then
+#    pacman -S --noconfirm --needed "${PACKAGES[@]}"
+#  else
+#    pacman-key -a <(curl 'https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x882dcfe48e2051d48e2562abf3b607488db35a47')
+#    pacman-key --lsign-key F3B607488DB35A47
+#    pacman -U --noconfirm https://mirror.cachyos.org/repo/x86_64/cachyos/{cachyos-keyring-20240331-1-any,cachyos-mirrorlist-22-1-any,cachyos-v3-mirrorlist-22-1-any,pacman-7.1.0.r7.gb9f7d4a-3-x86_64}.pkg.tar.zst
+#    pacman -Syu --noconfirm --needed "${PACKAGES[@]}"
+#  fi
+#
+#  systemctl enable "${SERVICES[@]}"
+#  systemctl list-unit-files -t service --state=enabled --no-legend | awk '{print $1}' | while read -r svc; do
+#    [[ ${SERVICES[*]} == *${svc}* ]] || [[ ${svc} == getty@* ]] || systemctl disable "${svc}"
+#  done
+#
+#  if ! pacman -Q linux-zenixark &>/dev/null; then
+#  ( cp -r "${DIR}"/kernel /tmp/linux-zenixark
+#    cd /tmp/linux-zenixark
+#    . PKGBUILD
+#    makedepends+=(base-devel)
+#    pacman -S --noconfirm --needed "${makedepends[@]}"
+#    runuser user -c makepkg
+#    pacman -U --noconfirm linux-zenixark*.pkg.tar.zst || :
+#    pacman -Rcns --noconfirm "${makedepends[@]}" )
+#  fi
+#
+#  if sbctl status | grep -q 'Setup.*Enabled'; then
+#    sbctl create-keys
+#    sbctl enroll-keys -t
+#    sbctl sign -s /boot/EFI/BOOT/BOOTX64.EFI
+#  fi
+#
+#  if ! [[ $(pacman -Q openrgb | awk '{print $2}') == 1.0rc1-2 ]]; then
+#    pacman -Rcns --noconfirm openrgb || : # OpenRGB is completely broken for me after this version for some reason
+#    pacman -U --noconfirm https://archive.archlinux.org/repos/2025/08/31/extra/os/x86_64/openrgb-1.0rc1-2-x86_64.pkg.tar.zst
+#  fi
+#
+#  sed -i 's|^;.*cookie-file.*|cookie-file = /tmp/.pulse-cookie|' /etc/pulse/client.conf # Fixes Steam creating ~/.pulse-cookie
+#  sed -i 's|which|command -v|' /usr/lib/password-store/extensions/otp.bash # Fixes pass-otp 'which not found'
 }
 
-if [[ -d /run/archiso ]]; then
+if [[ $(uname -n) == livecd ]]; then
   : "${DISK}:?" "${PASS}:?"
 
   read -rp $'You probably shouldn\'t be running this if you aren\'t Zenixark.\nType IK to continue to disk wiping: ' IK
