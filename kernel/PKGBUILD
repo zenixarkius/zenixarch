@@ -1,10 +1,10 @@
 # shellcheck shell=bash disable=2034,2154,2164
 
-pkgver=6.18.3
+pkgver=6.18.4
 _nvver=590.48.01
 
 pkgname=linux-zenixark
-depends=(mkinitcpio nvidia-utils="${_nvver}" systemd)
+depends=(mkinitcpio nvidia-utils="${_nvver}")
 makedepends=(bc clang lld llvm perl python)
 provides=(NTSYNC-MODULE NVIDIA-MODULE WIREGUARD-MODULE)
 
@@ -37,7 +37,7 @@ prepare() {
   done
 
   cp ../config .config
-  make LLVM=1 LLVM_IAS=1 olddefconfig
+  make LLVM=1 olddefconfig
 
   echo -${pkgrel} > localversion.10-pkgrel
   echo ${pkgname#linux} > localversion.20-pkgname
@@ -48,10 +48,10 @@ prepare() {
 
 build() {
   cd linux-${pkgver%.0}
-  make LLVM=1 LLVM_IAS=1 -j"$(nproc)" all
+  make LLVM=1 -j"$(nproc)" all
 
   cd "${srcdir}"/NVIDIA-Linux-x86_64-${_nvver}/kernel
-  make LLVM=1 LLVM_IAS=1 KERNEL_UNAME=${pkgver}-${pkgname#linux-} SYSSRC="${srcdir}"/linux-${pkgver%.0} SYSOUT="${srcdir}"/linux-${pkgver%.0} CC=clang LD=ld.lld NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j"$(nproc)" modules
+  make CC=clang LD=ld.lld KERNEL_UNAME=${pkgver}-${pkgname#linux-} {SYSSRC,SYSOUT}="${srcdir}"/linux-${pkgver%.0} NV_EXCLUDE_BUILD_MODULES=__EXCLUDE_MODULES IGNORE_CC_MISMATCH=yes -j"$(nproc)" modules
 }
 
 package() {
@@ -68,16 +68,16 @@ package() {
     -exec scripts/sign-file sha512 certs/signing_key.pem certs/signing_key.x509 {} \; \
     -exec zstd --rm -19 -T0 {} +
 
-  ZSTD_CLEVEL=19 make CC=clang LD=ld.lld LLVM=1 LLVM_IAS=1 INSTALL_MOD_PATH="${pkgdir}"/usr INSTALL_MOD_STRIP=1 DEPMOD=/doesnt/exist modules_install
+  make INSTALL_MOD_PATH="${pkgdir}"/usr DEPMOD=/doesnt/exist modules_install
   rm "${modulesdir}"/build
 }
 
 pkgrel=1 arch=(x86_64) options=(!strip)
-sha256sums=('2bd125e11a41a6f021df7ed6216cd4b89bfbfbb0fd9d4d3aeea70f19b2b0290f'
+sha256sums=('04dc0a83849bd8ec1f3ac67523009ff76ac807c5689317be1565db559bac7e1f'
             '05d100b297182b5e61fe37d07781e8766416f78524ed7f7382f4d0796bc14023'
-            '7a8879167b89c4bae077d6f39c4f2130769f05dbdad2aad914adab9afb7d7f9a'
+            'f850139ca5f79c1bf6bb8b32f92e212aadca97bdaef8a83a7cf4ac4d6a525fab'
             'b9e2f80693781431cc87f4cd29109e133dcecb50a50d6b68d4b3bf2d696bd689'
-            '894a2c27ba7afe6cd9381922a80499f8c347b4fa5f2469b08dce42d1bf667310'
+            '62d8574a970ee6fe5ca5d758eb1031502890cdf9be4c44733ba9ba292eb05542'
             'f88d72d2cc374ee03e8200055459d5e4fbeb3fd14cbd197a95766839d536b483'
             '163c57160cc1033020680f638b44ebd94b496152dcd8951e87d5077d4d5c2009'
             'fe272982577efdc289cfe3e8bedafca607c0b7d6c9df1aab1880e22ef930d077'
